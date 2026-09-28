@@ -1,0 +1,27 @@
+# Credenciales y configuración local
+.env
+
+# Entorno virtual de Python
+.venv/
+
+# Archivos temporales de Python y pytest
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Registros del sistema (se conserva la carpeta)
+logs/*
+!logs/.gitkeep
+
+# Configuración del editor (PyCharm)
+.idea/
+
+# Archivos temporales de Office
+~$*
+
+# Documentos personales (no se suben)
+¿A que se refiere.pdf
+resumen.txt
+Soluciones_cabos_sueltos.txt

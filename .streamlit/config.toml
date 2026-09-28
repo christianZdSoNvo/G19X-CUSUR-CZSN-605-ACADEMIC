@@ -1,0 +1,8 @@
+# Para que el sistema solo se use desde este equipo
+[server]
+address = "localhost"
+port = 8501
+
+# Ningún dato sale a Internet
+[browser]
+gatherUsageStats = false

@@ -1,0 +1,9 @@
+streamlit
+mysql-connector-python
+ollama
+pandas
+openpyxl
+fpdf2
+plotly
+python-dotenv
+pytest
