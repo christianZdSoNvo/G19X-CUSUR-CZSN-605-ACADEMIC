@@ -1,6 +1,8 @@
+from contextlib import contextmanager
+
 import mysql.connector
 
-from backend import config
+from backend import config, errores
 
 
 def obtener_conexion(con_base_de_datos=True):
@@ -27,3 +29,32 @@ def probar_conexion():
         return version, existe
     finally:
         conexion.close()
+
+
+def codigo_de_error(error):
+    # Traduce un error de MySQL a un código del catálogo
+    if error.errno in (1044, 1045, 1049, 1142):
+        return "E-002"
+    if error.errno == 1062:
+        return "E-004"
+    if isinstance(error, (mysql.connector.IntegrityError, mysql.connector.DataError)) or error.errno == 3819:
+        return "E-003"
+    return "E-001"
+
+
+@contextmanager
+def transaccion():
+    # Cursor de diccionarios; confirma al salir sin errores y deshace si hay una excepción
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor(dictionary=True, buffered=True)
+        yield cursor
+        conexion.commit()
+    except mysql.connector.Error as error:
+        codigo = codigo_de_error(error)
+        errores.registrar(codigo, error)
+        raise errores.ErrorSistema(codigo) from error
+    finally:
+        if conexion is not None and conexion.is_connected():
+            conexion.close()
