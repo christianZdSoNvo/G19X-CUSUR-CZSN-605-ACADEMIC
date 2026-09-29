@@ -36,7 +36,7 @@ class ErrorSistema(Exception):
         return CATALOGO[self.codigo]
 
 
-def registrar(codigo, error):
+def _preparar_log():
     # Streamlit vuelve a ejecutar los módulos; el manejador se agrega una sola vez
     if not _log.handlers:
         manejador = logging.FileHandler(RUTA_LOG, encoding="utf-8")
@@ -44,4 +44,14 @@ def registrar(codigo, error):
         _log.addHandler(manejador)
         _log.setLevel(logging.INFO)
         _log.propagate = False
+
+
+def registrar(codigo, error):
+    _preparar_log()
     _log.error(codigo, exc_info=error)
+
+
+def registrar_aviso(codigo, detalle):
+    # Para situaciones esperadas (p. ej. E-304) que no traen una excepción
+    _preparar_log()
+    _log.warning("%s %s", codigo, detalle)

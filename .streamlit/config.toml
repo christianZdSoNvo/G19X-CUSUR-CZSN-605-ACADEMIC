@@ -6,3 +6,53 @@ port = 8501
 # Ningún dato sale a Internet
 [browser]
 gatherUsageStats = false
+
+# Oculta "Deploy" y las opciones de desarrollador del menú de Streamlit
+[client]
+toolbarMode = "viewer"
+
+# Tema del sistema: dorado, rojo y azul oscuro, con blancos y grises de apoyo.
+# El usuario elige claro u oscuro desde el menú de Streamlit (Settings).
+[theme]
+baseRadius = "0.5rem"
+showSidebarBorder = false
+
+[theme.light]
+primaryColor = "#0B1F3A"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F3F5"
+textColor = "#0B1F3A"
+linkColor = "#B22234"
+borderColor = "#D9DCE1"
+redColor = "#B22234"
+yellowColor = "#C9A227"
+blueColor = "#0B1F3A"
+# Gráficas (Plotly con el tema de Streamlit): azul oscuro, dorado, rojo y grises
+chartCategoricalColors = ["#0B1F3A", "#C9A227", "#B22234", "#5B6B82", "#E3C565", "#9AA4B2"]
+
+[theme.light.sidebar]
+primaryColor = "#C9A227"
+backgroundColor = "#0B1F3A"
+secondaryBackgroundColor = "#13294B"
+textColor = "#F4F1E8"
+borderColor = "#23395D"
+
+[theme.dark]
+primaryColor = "#C9A227"
+backgroundColor = "#0A1628"
+secondaryBackgroundColor = "#13233D"
+textColor = "#F4F1E8"
+linkColor = "#E3C565"
+borderColor = "#23395D"
+redColor = "#D64550"
+yellowColor = "#E3C565"
+blueColor = "#5B7DB1"
+# Sobre fondo azul oscuro, el azul de las gráficas se aclara para que se vea
+chartCategoricalColors = ["#5B7DB1", "#C9A227", "#D64550", "#9AA4B2", "#E3C565", "#B8C4D6"]
+
+[theme.dark.sidebar]
+primaryColor = "#C9A227"
+backgroundColor = "#07101E"
+secondaryBackgroundColor = "#0F1D33"
+textColor = "#F4F1E8"
+borderColor = "#1B2C47"

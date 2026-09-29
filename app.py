@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from backend import errores, sesion
+from backend import errores, menu, permisos, sesion
 from backend.interfaz import pantalla_error
 
 st.set_page_config(page_title="Sistema de Talento", layout="centered")
@@ -12,14 +12,19 @@ try:
     usuario = sesion.usuario_actual()
 
     if usuario is None:
-        paginas = [st.Page("pages/inicio_sesion.py", title="Iniciar sesión")]
+        paginas = [st.Page("paginas/inicio_sesion.py", title="Iniciar sesión")]
     elif usuario["debe_cambiar_contrasena"]:
-        paginas = [st.Page("pages/cambiar_contrasena.py", title="Cambiar contraseña")]
+        paginas = [st.Page("paginas/cambiar_contrasena.py", title="Cambiar contraseña")]
     else:
-        paginas = [st.Page("pages/inicio.py", title="Inicio", default=True)]
+        paginas = {}
+        for seccion, archivo, titulo, icono, visible in menu.opciones(usuario):
+            paginas.setdefault(seccion, []).append(st.Page(
+                archivo, title=titulo, icon=icono, default=archivo == "paginas/inicio.py",
+                visibility="visible" if visible else "hidden",
+            ))
         with st.sidebar:
             st.write(f"**{usuario['nombre']}**")
-            st.caption(f"{usuario['cargo']} · {usuario['area']}")
+            st.caption(f"{permisos.NOMBRES_CARGO[usuario['cargo']]} · {usuario['area']}")
             if st.button("Cerrar sesión"):
                 sesion.cerrar()
                 st.rerun()

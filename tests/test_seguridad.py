@@ -43,3 +43,10 @@ def test_hash_igual_al_de_mysql():
     except errores.ErrorSistema:
         pytest.skip("MySQL no disponible")
     assert seguridad.hashear("Clave123", "0a1b2c3d4e5f6a7b") == hash_mysql
+
+
+def test_contrasena_temporal_cumple_la_politica():
+    for _ in range(200):
+        temporal = seguridad.generar_temporal()
+        assert len(temporal) == 10
+        assert seguridad.validar_politica(temporal) == []

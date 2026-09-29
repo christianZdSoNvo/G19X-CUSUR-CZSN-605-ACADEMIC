@@ -4,9 +4,23 @@ import secrets
 # Mismo formato que el script SQL: SHA2(CONCAT(salt, contraseña), 256)
 REQUISITOS = "Mínimo 8 caracteres, con al menos una mayúscula, una minúscula y un número."
 
+# Sin caracteres que se confunden al dictarla en persona (0/O, 1/l/I)
+_MAYUSCULAS = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+_MINUSCULAS = "abcdefghijkmnpqrstuvwxyz"
+_NUMEROS = "23456789"
+
 
 def generar_salt():
     return secrets.token_hex(8)
+
+
+def generar_temporal(longitud=10):
+    # Contraseña temporal que cumple la política: una de cada tipo y el resto al azar
+    todos = _MAYUSCULAS + _MINUSCULAS + _NUMEROS
+    caracteres = [secrets.choice(_MAYUSCULAS), secrets.choice(_MINUSCULAS), secrets.choice(_NUMEROS)]
+    caracteres += [secrets.choice(todos) for _ in range(longitud - 3)]
+    secrets.SystemRandom().shuffle(caracteres)
+    return "".join(caracteres)
 
 
 def hashear(contrasena, salt):
