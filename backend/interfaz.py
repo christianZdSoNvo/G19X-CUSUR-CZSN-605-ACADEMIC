@@ -18,6 +18,13 @@ def pantalla_error(codigo):
     st.stop()
 
 
+def ocultar_barra_lateral():
+    # Antes de entrar al sistema (login o cambio obligatorio) no debe poder abrirse
+    # la barra lateral; Streamlit muestra su botón aunque esté vacía
+    st.html("<style>[data-testid='stSidebar'], [data-testid='stExpandSidebarButton'], "
+            "[data-testid='stSidebarCollapseButton'] {display: none;}</style>")
+
+
 def en_construccion(titulo, fase):
     st.title(titulo)
     st.info(f"Esta sección se implementará en la fase {fase}.")

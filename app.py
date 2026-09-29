@@ -3,9 +3,15 @@
 import streamlit as st
 
 from backend import errores, menu, permisos, sesion
-from backend.interfaz import pantalla_error
+from backend.interfaz import ocultar_barra_lateral, pantalla_error
 
 st.set_page_config(page_title="Sistema de Talento", layout="centered")
+
+
+def dentro_del_sistema(usuario):
+    # Sesión iniciada y sin cambio obligatorio de contraseña pendiente
+    return usuario is not None and not usuario["debe_cambiar_contrasena"]
+
 
 try:
     sesion.revisar_inactividad()
@@ -29,8 +35,11 @@ try:
                 sesion.cerrar()
                 st.rerun()
 
-    # Sin sesión o con cambio obligatorio no se muestra el menú
-    menu_visible = usuario is not None and not usuario["debe_cambiar_contrasena"]
-    st.navigation(paginas, position="sidebar" if menu_visible else "hidden").run()
+    # Sin sesión o con cambio obligatorio no se muestran el menú ni la barra lateral
+    if not dentro_del_sistema(usuario):
+        ocultar_barra_lateral()
+    st.navigation(paginas, position="sidebar" if dentro_del_sistema(usuario) else "hidden").run()
 except errores.ErrorSistema as error:
+    if not dentro_del_sistema(sesion.usuario_actual()):
+        ocultar_barra_lateral()
     pantalla_error(error.codigo)
