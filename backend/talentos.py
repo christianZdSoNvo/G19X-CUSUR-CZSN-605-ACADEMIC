@@ -1,7 +1,7 @@
 import datetime
 import re
 
-from backend import bitacora, catalogos, db, errores, permisos
+from backend import alertas, bitacora, catalogos, db, errores, permisos
 
 # Gestión de talentos (PRD, 6.1, 6.4 y 13.8). Las funciones de consulta reciben al
 # usuario de la sesión para limitar al Encargado a su área; las de escritura son
@@ -179,6 +179,10 @@ def editar(administrador, id_talento, datos):
         if "area" in cambios:
             _evento(cursor, administrador, id_talento, "cambio_area",
                     f"Cambio de área: {actual['area']} -> {datos['area']}.", hoy)
+        if "desempeno_previo" in cambios:
+            # Alertas de variación del desempeño (PRD, 6.6), con el nombre y el área ya actualizados
+            alertas.al_editar(cursor, {"id_talento": id_talento, "nombre": datos["nombre"], "area": datos["area"]},
+                              actual["desempeno_previo"], datos["desempeno_previo"])
         bitacora.registrar(cursor, administrador["id_usuario"], "edicion", "Talentos", id_talento,
                            {"anterior": {campo: actual[campo] for campo in cambios}, "nuevo": cambios})
     return {}

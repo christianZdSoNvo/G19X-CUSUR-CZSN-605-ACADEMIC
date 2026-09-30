@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from backend import errores, menu, permisos, sesion
+from backend import errores, menu, notificaciones, permisos, sesion
 from backend.interfaz import NOMBRE, SIGNIFICADO, ocultar_barra_lateral, pantalla_error
 
 st.set_page_config(page_title=NOMBRE, layout="centered")
@@ -23,7 +23,8 @@ try:
         paginas = [st.Page("paginas/cambiar_contrasena.py", title="Cambiar contraseña")]
     else:
         paginas = {}
-        for seccion, archivo, titulo, icono, visible in menu.opciones(usuario):
+        pendientes = notificaciones.pendientes(usuario)
+        for seccion, archivo, titulo, icono, visible in menu.opciones(usuario, pendientes):
             paginas.setdefault(seccion, []).append(st.Page(
                 archivo, title=titulo, icon=icono, default=archivo == "paginas/inicio.py",
                 visibility="visible" if visible else "hidden",

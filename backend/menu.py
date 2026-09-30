@@ -27,10 +27,16 @@ MENU = {
 }
 
 
-def opciones(usuario):
+NOTIFICACIONES = "paginas/notificaciones.py"
+
+
+def opciones(usuario, pendientes=0):
     # Todas las páginas se registran para que una URL no permitida llegue a su
     # página y muestre E-304; las que el rol no puede usar quedan ocultas del menú.
+    # Notificaciones muestra el número de pendientes (PRD, 12.3).
     for seccion, paginas in MENU.items():
         for archivo, titulo, icono, funcion in paginas:
             visible = funcion is None or permisos.puede(usuario, funcion)
+            if archivo == NOTIFICACIONES and pendientes:
+                titulo = f"{titulo} ({pendientes})"
             yield seccion, archivo, titulo, icono, visible

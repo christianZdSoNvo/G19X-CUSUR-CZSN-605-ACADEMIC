@@ -145,6 +145,14 @@ def ficha(talento):
             st.markdown(f"**{ETIQUETAS[campo]}:** {talento[campo]}")
     st.caption(f"Última modificación: {fecha(talento['fecha_modificacion'])}")
 
+    # El Encargado pide los cambios al Administrador por notificación (PRD, 6.6)
+    correccion, reevaluacion = st.columns(2)
+    for columna, tipo, etiqueta in ((correccion, "correccion_datos", "Solicitar corrección de datos"),
+                                    (reevaluacion, "reevaluacion", "Solicitar reevaluación con IA")):
+        if columna.button(etiqueta, key=f"solicitar_{tipo}", width="stretch"):
+            st.session_state["nueva_notificacion"] = {"tipo": tipo, "id_talento": talento["id_talento"]}
+            st.switch_page("paginas/notificaciones.py")
+
 
 def edicion(talento):
     clave = f"editar_{talento['id_talento']}"
@@ -253,9 +261,13 @@ def lista():
     st.caption(f"{len(resultados)} talento(s).")
 
     por_id = {fila["id_talento"]: fila for fila in resultados}
+    # Un talento elegido desde una notificación llega ya seleccionado
+    preseleccion = st.session_state.pop("talentos_talento", None)
+    if preseleccion in por_id:
+        st.session_state["talentos_elegido"] = preseleccion
     id_elegido = st.selectbox(
         "Talento a " + ("modificar" if puede_editar else "consultar"), list(por_id), index=None,
-        placeholder="Seleccione un talento",
+        placeholder="Seleccione un talento", key="talentos_elegido",
         format_func=lambda id_talento: f"{id_talento} - {por_id[id_talento]['nombre']}")
     if id_elegido is None:
         return

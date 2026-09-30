@@ -1,6 +1,6 @@
 import streamlit as st
 
-from backend import auth, errores, ia, permisos, sesion
+from backend import alertas, auth, errores, ia, permisos, sesion
 from backend.interfaz import DESCRIPCION, NOMBRE, SIGNIFICADO
 
 st.title(NOMBRE)
@@ -27,6 +27,8 @@ if enviar:
             st.error(error.mensaje)
         else:
             sesion.iniciar(datos)
+            # Alertas de "días sin evaluar" (PRD, 12.3): Streamlit no tiene tareas programadas
+            alertas.revisar_sin_evaluar()
             if permisos.puede(datos, "evaluar_ia"):
                 # La primera carga del modelo tarda más que el tiempo máximo (PRD, 10)
                 ia.precargar()

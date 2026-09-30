@@ -1,7 +1,7 @@
 import httpx
 import ollama
 
-from backend import bitacora, db, errores, ia, permisos
+from backend import alertas, bitacora, db, errores, ia, permisos
 
 # Evaluación con IA (PRD, 6.8, 9.10, 9.11 y 10). Cada llamada al modelo cuenta como
 # un intento, aunque falle o se pase del tiempo. Los intentos se cuentan en la
@@ -87,7 +87,7 @@ def evaluar(administrador, id_talento):
     permisos.exigir(administrador, "evaluar_ia")
     with db.transaccion() as cursor:
         cursor.execute(
-            "SELECT id_talento, nombre, desempeno_previo, competencias, capacitacion, experiencia, "
+            "SELECT id_talento, nombre, area, desempeno_previo, competencias, capacitacion, experiencia, "
             "objetivos_futuros, liderazgo_previo FROM Talentos WHERE id_talento = %s AND activo",
             (id_talento,),
         )
@@ -140,7 +140,7 @@ def evaluar(administrador, id_talento):
                                                        evaluacion["potencial_crecimiento_nivel"])
     with db.transaccion() as cursor:
         cursor.execute(
-            "SELECT potencial_crecimiento_nivel FROM Evaluaciones WHERE id_talento = %s "
+            "SELECT potencial_crecimiento_nivel, puntuacion_talento_por_ia FROM Evaluaciones WHERE id_talento = %s "
             "ORDER BY id_evaluacion DESC LIMIT 1",
             (id_talento,),
         )
@@ -159,6 +159,8 @@ def evaluar(administrador, id_talento):
         if anterior is not None and anterior["potencial_crecimiento_nivel"] != nivel:
             _evento(cursor, administrador, id_talento, "cambio_clasificacion",
                     f"Potencial de crecimiento: {anterior['potencial_crecimiento_nivel']} -> {nivel}.")
+        # Alertas de variación (PRD, 6.6)
+        alertas.al_evaluar(cursor, talento, anterior, evaluacion)
         bitacora.registrar(cursor, administrador["id_usuario"], "evaluacion_ia", "Talentos", id_talento,
                            {"resultado": "valida", "intentos": usados, "rechazos": rechazos,
                             "id_evaluacion": evaluacion["id_evaluacion"]})
