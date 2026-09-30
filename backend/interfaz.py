@@ -2,6 +2,11 @@ import streamlit as st
 
 from backend import auth, errores, seguridad
 
+# Nombre del sistema
+NOMBRE = "TalentOS"
+SIGNIFICADO = "Talent Overview System"
+DESCRIPCION = "Sistema de Identificación de Talento de Alto Potencial"
+
 
 def pantalla_error(codigo):
     # Pantalla de error del PRD, sección 7: mensaje, código para copiar y "Reiniciar"

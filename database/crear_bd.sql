@@ -1,5 +1,5 @@
 -- =====================================================================
--- Sistema de Identificación de Talento de Alto Potencial
+-- TalentOS (Talent Overview System): Sistema de Identificación de Talento de Alto Potencial
 -- Script de instalación de la base de datos (PRD, sección 9)
 -- MySQL 8.0.17 o superior
 -- =====================================================================

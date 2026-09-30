@@ -1,8 +1,10 @@
 import streamlit as st
 
 from backend import auth, errores, ia, permisos, sesion
+from backend.interfaz import DESCRIPCION, NOMBRE, SIGNIFICADO
 
-st.title("Sistema de Identificación de Talento de Alto Potencial")
+st.title(NOMBRE)
+st.caption(f"{SIGNIFICADO} · {DESCRIPCION}")
 
 if st.session_state.pop("sesion_expirada", False):
     st.warning(errores.CATALOGO["E-303"])

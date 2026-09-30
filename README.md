@@ -1,2 +1,2 @@
-# Proyecto-Sistema-Alto-Talento
-Repositorio para subir de manera privada y de prueba
+# TalentOS (Talent Overview System)
+Sistema de Identificación de Talento de Alto Potencial. Repositorio privado y de prueba.

@@ -3,9 +3,9 @@
 import streamlit as st
 
 from backend import errores, menu, permisos, sesion
-from backend.interfaz import ocultar_barra_lateral, pantalla_error
+from backend.interfaz import NOMBRE, SIGNIFICADO, ocultar_barra_lateral, pantalla_error
 
-st.set_page_config(page_title="Sistema de Talento", layout="centered")
+st.set_page_config(page_title=NOMBRE, layout="centered")
 
 
 def dentro_del_sistema(usuario):
@@ -29,6 +29,9 @@ try:
                 visibility="visible" if visible else "hidden",
             ))
         with st.sidebar:
+            st.markdown(f"## {NOMBRE}")
+            st.caption(SIGNIFICADO)
+            st.divider()
             st.write(f"**{usuario['nombre']}**")
             st.caption(f"{permisos.NOMBRES_CARGO[usuario['cargo']]} · {usuario['area']}")
             if st.button("Cerrar sesión"):
