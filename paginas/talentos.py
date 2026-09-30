@@ -3,11 +3,15 @@ import datetime
 import pandas as pd
 import streamlit as st
 
-from backend import catalogos, errores, permisos, sesion, talentos
+from backend import catalogos, errores, evaluaciones, ia, permisos, sesion, talentos
 
 usuario = sesion.usuario_actual()
 permisos.exigir(usuario, "ver_talentos")
 puede_editar = permisos.puede(usuario, "editar_talentos")
+puede_evaluar = permisos.puede(usuario, "evaluar_ia")
+if puede_evaluar:
+    # Mantiene el modelo en memoria mientras el Administrador trabaja con talentos
+    ia.precargar()
 
 ETIQUETAS = {
     "nombre": "Nombre completo",
@@ -23,6 +27,14 @@ ETIQUETAS = {
     "liderazgo_previo": "Liderazgo previo",
 }
 FECHA_MINIMA = datetime.date(1950, 1, 1)
+CRITERIOS_IA = {
+    "desempeno_pre_ev": "Desempeño previo",
+    "resultados_cap_ev": "Resultados de capacitación",
+    "experiencia_lab_ev": "Experiencia laboral",
+    "objetivos_fut_ev": "Objetivos futuros",
+    "competencias_ev": "Competencias",
+    "liderazgo_prev_ev": "Liderazgo previo",
+}
 
 
 def fecha(valor):
@@ -252,10 +264,58 @@ def lista():
         st.warning(talentos.NO_IDENTIFICADO)
         return
     st.subheader(talento["nombre"])
-    if puede_editar:
-        edicion(talento)
-    else:
-        ficha(talento)
+    pestana_datos, pestana_ia = st.tabs(["Datos del talento", "Evaluación con IA"])
+    with pestana_datos:
+        if puede_editar:
+            edicion(talento)
+        else:
+            ficha(talento)
+    with pestana_ia:
+        evaluacion_ia(talento)
+
+
+def evaluacion_ia(talento):
+    # Botón "Evaluar" solo para el Administrador (PRD, 6.7); ambos roles ven la última evaluación
+    id_talento = talento["id_talento"]
+    if puede_evaluar:
+        estado = evaluaciones.estado(id_talento)
+        disponibles = max(estado["limite"] - estado["usados"], 0)
+        st.caption(f"Se evalúan los datos guardados del talento. Intentos disponibles hoy: {disponibles} "
+                   f"de {estado['limite']} (se renuevan cada día o al modificar sus datos). Cada intento "
+                   f"puede tardar hasta {estado['segundos']} segundos.")
+        if st.button("Evaluar con IA", type="primary", disabled=disponibles == 0, key=f"evaluar_{id_talento}"):
+            try:
+                with st.spinner("Evaluando con IA, espere por favor..."):
+                    resultado = evaluaciones.evaluar(usuario, id_talento)
+            except errores.ErrorSistema as error:
+                # Sin conexión con la IA se muestra la pantalla de error (PRD, 6.8)
+                if error.codigo == "E-101":
+                    raise
+                st.session_state["error_ia"] = error.codigo
+                st.rerun()
+            avisar(f"Se evaluó a {talento['nombre']}: potencial {resultado['potencial_crecimiento_nivel']}, "
+                   f"{resultado['puntuacion_talento_por_ia']} puntos.")
+        codigo = st.session_state.pop("error_ia", None)
+        if codigo:
+            st.error(f"{errores.CATALOGO[codigo]} ({codigo})")
+        if disponibles == 0 and codigo != "E-104":
+            st.warning(f"{errores.CATALOGO['E-104']} (E-104)")
+
+    evaluacion = evaluaciones.ultima(usuario, id_talento)
+    if evaluacion is None:
+        st.info("Este talento aún no tiene evaluaciones con IA.")
+        return
+    st.markdown(f"**Última evaluación:** {fecha(evaluacion['fecha_evaluacion'])}")
+    potencial, puntuacion = st.columns(2)
+    potencial.metric("Potencial de crecimiento", evaluacion["potencial_crecimiento_nivel"].capitalize())
+    puntuacion.metric("Puntuación", evaluacion["puntuacion_talento_por_ia"])
+    # La clasificación 9-box va como una fila más para que se lea completa
+    filas = [{"Criterio": nombre, "Resultado": evaluacion[llave].capitalize()}
+             for llave, nombre in CRITERIOS_IA.items()]
+    filas.append({"Criterio": "Clasificación 9-box", "Resultado": evaluacion["clasificacion_9box"]})
+    st.dataframe(pd.DataFrame(filas), hide_index=True, width="stretch")
+    st.markdown("**Reporte**")
+    st.write(evaluacion["reporte_ia"])
 
 
 def bajas():

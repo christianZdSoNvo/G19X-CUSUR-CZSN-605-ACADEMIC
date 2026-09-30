@@ -1,6 +1,6 @@
 import streamlit as st
 
-from backend import auth, errores, sesion
+from backend import auth, errores, ia, permisos, sesion
 
 st.title("Sistema de Identificación de Talento de Alto Potencial")
 
@@ -25,6 +25,9 @@ if enviar:
             st.error(error.mensaje)
         else:
             sesion.iniciar(datos)
+            if permisos.puede(datos, "evaluar_ia"):
+                # La primera carga del modelo tarda más que el tiempo máximo (PRD, 10)
+                ia.precargar()
             st.rerun()
 
 with st.expander("¿Olvidaste tu usuario o contraseña?"):

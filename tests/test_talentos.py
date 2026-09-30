@@ -1,9 +1,6 @@
 import datetime
-import time
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from backend import db, errores, permisos, talentos
 
 VALIDOS = {"nombre": "Luis Pérez", "area": "Calidad", "correo": "luis.pytest@ejemplo.com",
@@ -46,42 +43,7 @@ def test_desempeno_opcional():
     assert talentos.validar(talentos.limpiar({**VALIDOS, "desempeno_previo": None})) == {}
 
 
-# --- Pruebas con MySQL: todo corre en una sola conexión que se deshace al final ---
-
-class _SinConfirmar:
-    def __init__(self, conexion):
-        self._conexion = conexion
-
-    def cursor(self, **opciones):
-        return self._conexion.cursor(**opciones)
-
-    def commit(self):
-        pass
-
-    def is_connected(self):
-        return self._conexion.is_connected()
-
-    def close(self):
-        pass
-
-
-@pytest.fixture
-def administrador(monkeypatch):
-    try:
-        conexion = db.obtener_conexion()
-    except Exception:
-        pytest.skip("MySQL no disponible")
-    monkeypatch.setattr(db, "obtener_conexion", lambda: _SinConfirmar(conexion))
-    try:
-        with db.transaccion() as cursor:
-            cursor.execute("SELECT id_usuario FROM Usuarios WHERE cargo = %s LIMIT 1",
-                           (permisos.ADMINISTRADOR,))
-            fila = cursor.fetchone()
-        yield {"id_usuario": fila["id_usuario"], "cargo": permisos.ADMINISTRADOR,
-               "area": "Recursos Humanos", "nombre": "Prueba"}
-    finally:
-        conexion.rollback()
-        conexion.close()
+# --- Pruebas con MySQL: fixture "administrador" de conftest.py ---
 
 
 def _consultar(sql, parametros):
@@ -137,15 +99,8 @@ def test_encargado_solo_ve_su_area(administrador):
         talentos.crear(encargado, {**VALIDOS, "correo": "otro.pytest@ejemplo.com"})
 
 
-def _app_con_sesion(usuario):
-    app = AppTest.from_file("../app.py", default_timeout=30)
-    app.session_state["usuario"] = {**usuario, "debe_cambiar_contrasena": False, "minutos_inactividad": 30}
-    app.session_state["ultimo_acceso"] = time.time()
-    return app
-
-
-def test_pantalla_muestra_errores_debajo_de_los_campos(administrador):
-    app = _app_con_sesion(administrador).run()
+def test_pantalla_muestra_errores_debajo_de_los_campos(administrador, app_con_sesion):
+    app = app_con_sesion(administrador).run()
     app.switch_page("paginas/talentos.py").run()
     assert not app.exception
     assert [pestana.label for pestana in app.tabs] == ["Lista", "Nuevo talento", "Talentos dados de baja"]
@@ -158,9 +113,9 @@ def test_pantalla_muestra_errores_debajo_de_los_campos(administrador):
     assert f"{errores.CATALOGO['E-003']} (E-003)" in mensajes
 
 
-def test_edicion_y_baja_desde_la_pantalla(administrador):
+def test_edicion_y_baja_desde_la_pantalla(administrador, app_con_sesion):
     _, id_talento = talentos.crear(administrador, VALIDOS)
-    app = _app_con_sesion(administrador).run()
+    app = app_con_sesion(administrador).run()
     app.switch_page("paginas/talentos.py").run()
     app.text_input[0].input(str(id_talento)).run()
     app.selectbox[1].select(id_talento).run()
@@ -184,9 +139,9 @@ def test_edicion_y_baja_desde_la_pantalla(administrador):
     assert not talentos.obtener(administrador, id_talento)["activo"]
 
 
-def test_encargado_no_ve_el_formulario(administrador):
+def test_encargado_no_ve_el_formulario(administrador, app_con_sesion):
     encargado = {**administrador, "cargo": permisos.ENCARGADO, "area": "Calidad"}
-    app = _app_con_sesion(encargado).run()
+    app = app_con_sesion(encargado).run()
     app.switch_page("paginas/talentos.py").run()
     assert not app.exception
     assert not app.tabs
