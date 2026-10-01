@@ -30,9 +30,35 @@ def ocultar_barra_lateral():
             "[data-testid='stSidebarCollapseButton'] {display: none;}</style>")
 
 
-def en_construccion(titulo, fase):
-    st.title(titulo)
-    st.info(f"Esta sección se implementará en la fase {fase}.")
+# Tema claro/oscuro (PRD, 13.4). Streamlit no permite cambiarlo desde Python: se usa el
+# selector de su menú (⋮), que lo guarda en el navegador sin recargar la página (recargar
+# cerraría la sesión). Si una versión nueva de Streamlit cambia los data-testid del
+# menú, el selector deja de funcionar y hay que ajustarlos aquí.
+TEMAS = {"Claro": "Light", "Oscuro": "Dark", "Según el sistema": "System"}
+
+_SCRIPT_TEMA = """
+<script>
+(() => {
+  const menu = document.querySelector('[data-testid="stMainMenuButton"]');
+  if (!menu) return;
+  menu.click();
+  let vueltas = 0;
+  const buscar = setInterval(() => {
+    const opcion = document.querySelector('[data-testid="stMainMenuItem-theme-%s"]');
+    if (!opcion && ++vueltas < 40) return;
+    clearInterval(buscar);
+    if (opcion) opcion.click();
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+    menu.blur();
+  }, 50);
+})();
+</script>
+"""
+
+
+def aplicar_tema(nombre):
+    # nombre: una llave de TEMAS
+    st.html(_SCRIPT_TEMA % TEMAS[nombre], unsafe_allow_javascript=True)
 
 
 def formulario_contrasena(id_usuario, pedir_actual):

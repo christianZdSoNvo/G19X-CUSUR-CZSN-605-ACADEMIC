@@ -176,7 +176,8 @@ def test_pantalla_de_evaluacion(administrador, talento, modelo, app_con_sesion):
     assert not app.exception
     assert app.success[0].value == "Se evaluó a Ana García: potencial alto, 85 puntos."
     assert [metrica.value for metrica in app.metric] == ["Alto", "85"]
-    assert app.dataframe[-1].value.iloc[-1].tolist() == ["Clasificación 9-box", "Alta estrella"]
+    # La tabla de criterios termina con la 9-box (puede haber otras tablas, p. ej. las bajas)
+    assert ["Clasificación 9-box", "Alta estrella"] in [tabla.value.iloc[-1].tolist() for tabla in app.dataframe]
 
     # El Encargado ve la evaluación, pero no el botón
     encargado = {**administrador, "cargo": permisos.ENCARGADO, "area": "Calidad"}
@@ -186,4 +187,5 @@ def test_pantalla_de_evaluacion(administrador, talento, modelo, app_con_sesion):
     assert not app.exception
     assert f"evaluar_{talento}" not in [boton.key for boton in app.button]
     assert [metrica.value for metrica in app.metric] == ["Alto", "85"]
-    assert app.dataframe[-1].value.iloc[-1].tolist() == ["Clasificación 9-box", "Alta estrella"]
+    # La tabla de criterios termina con la 9-box (puede haber otras tablas, p. ej. las bajas)
+    assert ["Clasificación 9-box", "Alta estrella"] in [tabla.value.iloc[-1].tolist() for tabla in app.dataframe]

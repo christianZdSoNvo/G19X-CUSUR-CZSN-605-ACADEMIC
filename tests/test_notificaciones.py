@@ -82,6 +82,13 @@ def _notificaciones(id_destinatario, tipo="alerta_automatica"):
         return cursor.fetchall()
 
 
+def _sin_reglas_previas():
+    # Las reglas que ya existen en la BD no deben sumar notificaciones a la prueba
+    # (se deshace al final, como todo lo de la conexión de prueba)
+    with db.transaccion() as cursor:
+        cursor.execute("UPDATE Alertas_config SET activa = FALSE")
+
+
 def _regla(usuario, **cambios):
     datos = {"nombre": "Regla pytest", "indicador": "puntuacion_ia", "condicion": "cambia", "umbral": 10,
              "area": None, "id_destinatario": usuario["id_usuario"], "grado_emergencia": "alto", "activa": True,
@@ -184,6 +191,7 @@ def _evaluar(administrador, id_talento, monkeypatch, puntuacion, nivel):
 
 
 def test_alertas_al_evaluar(administrador, encargado, talento, monkeypatch):
+    _sin_reglas_previas()
     _regla(administrador, nombre="Puntos", area="Calidad")
     _regla(administrador, nombre="Nivel", indicador="nivel_potencial", condicion="disminuye", umbral=None)
     _regla(encargado, nombre="Mía")                                   # Calidad, para el Encargado
@@ -203,6 +211,7 @@ def test_alertas_al_evaluar(administrador, encargado, talento, monkeypatch):
 
 
 def test_alerta_al_editar_desempeno(administrador, talento):
+    _sin_reglas_previas()
     _regla(administrador, nombre="Desempeño", indicador="desempeno_previo", condicion="disminuye", umbral=10)
     antes = len(_notificaciones(administrador["id_usuario"]))
     talento_actual = talentos.obtener(administrador, talento)
