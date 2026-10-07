@@ -1,6 +1,6 @@
 import re
 
-from backend import bitacora, catalogos, db, permisos, seguridad
+from backend import bitacora, catalogos, db, fotos, permisos, seguridad
 
 # Gestión de usuarios (PRD, 6.7 y 13.4). Solo la usa el Administrador de RH;
 # "administrador" es el usuario de la sesión y queda como autor en la bitácora.
@@ -146,6 +146,26 @@ def marcar_solicitud_revisada(administrador, id_noti, respuesta):
             "WHERE id_noti = %s AND id_destinatario = %s",
             (respuesta.strip() or None, id_noti, administrador["id_usuario"]),
         )
+
+
+def foto(id_usuario):
+    # Foto de perfil del usuario (None = avatar genérico)
+    with db.transaccion() as cursor:
+        cursor.execute("SELECT foto FROM Usuarios WHERE id_usuario = %s", (id_usuario,))
+        fila = cursor.fetchone()
+    return fila["foto"] if fila else None
+
+
+def cambiar_foto(usuario, contenido):
+    # Cada usuario cambia su propia foto desde Configuración; None la quita. E-402 si la
+    # imagen no es válida.
+    permisos.exigir(usuario, "configuracion_general")
+    nueva = fotos.preparar(contenido) if contenido else None
+    with db.transaccion() as cursor:
+        cursor.execute("UPDATE Usuarios SET foto = %s WHERE id_usuario = %s", (nueva, usuario["id_usuario"]))
+        bitacora.registrar(cursor, usuario["id_usuario"], "edicion", "Usuarios", usuario["id_usuario"],
+                           {"foto": "actualizada" if nueva else "eliminada"})
+    return nueva
 
 
 def _bloquear_fila(cursor, id_usuario):

@@ -41,9 +41,11 @@ def _parametros(cursor):
 def _intentos_usados(cursor, id_talento):
     # Intentos de hoy posteriores a la última alta o edición del talento. Se compara
     # por id_bitacora (no por hora) para que una edición en el mismo segundo sí cuente.
+    # El cambio de foto no cuenta como edición: la foto no se envía al modelo.
     cursor.execute(
         "SELECT COALESCE(MAX(id_bitacora), 0) AS desde FROM Bitacora "
-        "WHERE tabla_afectada = 'Talentos' AND id_registro_afectado = %s AND accion IN ('alta', 'edicion')",
+        "WHERE tabla_afectada = 'Talentos' AND id_registro_afectado = %s AND accion IN ('alta', 'edicion') "
+        "AND JSON_EXTRACT(detalle, '$.foto') IS NULL",
         (id_talento,),
     )
     desde = cursor.fetchone()["desde"]

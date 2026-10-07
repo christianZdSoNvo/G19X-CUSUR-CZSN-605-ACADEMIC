@@ -1,7 +1,7 @@
 import datetime
 import re
 
-from backend import alertas, bitacora, catalogos, db, errores, permisos
+from backend import alertas, bitacora, catalogos, db, errores, fotos, permisos
 
 # Gestión de talentos (PRD, 6.1, 6.4 y 13.8). Las funciones de consulta reciben al
 # usuario de la sesión para limitar al Encargado a su área; las de escritura son
@@ -96,7 +96,7 @@ def buscar(usuario, texto="", area=None):
 def obtener(usuario, id_talento):
     with db.transaccion() as cursor:
         cursor.execute(
-            "SELECT id_talento, " + ", ".join(CAMPOS) + ", activo, fecha_modificacion "
+            "SELECT id_talento, " + ", ".join(CAMPOS) + ", activo, fecha_modificacion, foto "
             "FROM Talentos WHERE id_talento = %s",
             (id_talento,),
         )
@@ -223,6 +223,20 @@ def reactivar(administrador, id_talento):
         )
         bitacora.registrar(cursor, administrador["id_usuario"], "edicion", "Talentos", id_talento,
                            {"activo": True, "baja_anterior": baja})
+
+
+def cambiar_foto(administrador, id_talento, contenido):
+    # Guarda (contenido = bytes de la imagen) o quita (None) la foto de perfil; E-402 si
+    # la imagen no es válida. No renueva los intentos de IA: la foto no se envía al modelo.
+    permisos.exigir(administrador, "editar_talentos")
+    foto = fotos.preparar(contenido) if contenido else None
+    with db.transaccion() as cursor:
+        cursor.execute("SELECT id_talento FROM Talentos WHERE id_talento = %s AND activo FOR UPDATE", (id_talento,))
+        if cursor.fetchone() is None:
+            return
+        cursor.execute("UPDATE Talentos SET foto = %s WHERE id_talento = %s", (foto, id_talento))
+        bitacora.registrar(cursor, administrador["id_usuario"], "edicion", "Talentos", id_talento,
+                           {"foto": "actualizada" if foto else "eliminada"})
 
 
 def _por_correo(cursor, correo):

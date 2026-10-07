@@ -50,6 +50,8 @@ NOMBRES_CAMPOS = {
     "fecha_modificacion": "Última modificación",
 }
 _COLUMNAS_TALENTO = tuple(NOMBRES_CAMPOS)
+# Lado de la foto de perfil en el PDF individual (mm)
+LADO_FOTO = 32
 _COLUMNAS_EVALUACION = ("id_evaluacion", "fecha_evaluacion", *evaluaciones.COLUMNAS)
 
 
@@ -85,8 +87,9 @@ def nombre_archivo(datos, extension, generado):
 
 # --- Datos ---
 
-def datos_individual(usuario, id_talento):
-    # Talento con todas sus evaluaciones y eventos; el Encargado solo los de su área
+def datos_individual(usuario, id_talento, id_evaluacion=None):
+    # Talento con todas sus evaluaciones y eventos; el Encargado solo los de su área.
+    # "evaluacion" es la que se detalla en el PDF: la elegida o, si no se elige, la última.
     permisos.exigir(usuario, "reportes")
     talento = talentos.obtener(usuario, id_talento)
     if talento is None:
@@ -99,8 +102,19 @@ def datos_individual(usuario, id_talento):
         )
         lista = cursor.fetchall()
     eventos = analitica.historial(usuario, id_talento)["eventos"]
+    ultima = lista[-1] if lista else None
+    elegida = next((e for e in lista if e["id_evaluacion"] == id_evaluacion), None)
     return {"tipo": "individual", "talento": talento, "evaluaciones": lista, "eventos": eventos,
-            "ultima": lista[-1] if lista else None}
+            "ultima": ultima, "evaluacion": elegida or ultima}
+
+
+def _evaluacion_detallada(datos):
+    # Evaluación que va en "Resultado" y, si no es la última, la fecha de la más reciente
+    evaluacion, ultima = datos.get("evaluacion") or datos["ultima"], datos["ultima"]
+    anterior = evaluacion is not None and evaluacion["id_evaluacion"] != ultima["id_evaluacion"]
+    nota = (f"Evaluación anterior elegida para este reporte; la más reciente es del "
+            f"{fecha(ultima['fecha_evaluacion'])}." if anterior else None)
+    return evaluacion, nota
 
 
 def datos_general(usuario, area=None, niveles=(), clasificaciones=(), fechas=None, hoy=None):
@@ -296,10 +310,10 @@ class _PDF(FPDF):
                     color = colores.get((i, j))
                     fila_pdf.cell(str(texto), style=FontFace(emphasis="BOLD", color=color) if color else None)
 
-    def pares(self, filas):
+    def pares(self, filas, ancho=None):
         # Tabla de dos columnas "dato: valor" sin encabezado
         with self.table(col_widths=(35, 65), first_row_as_headings=False, line_height=6.5,
-                        borders_layout="NONE", padding=0.8) as tabla:
+                        borders_layout="NONE", padding=0.8, width=ancho, align="LEFT") as tabla:
             for dato, valor in filas:
                 fila = tabla.row()
                 fila.cell(dato, style=FontFace(emphasis="BOLD", color=AZUL))
@@ -393,12 +407,19 @@ class _PDF(FPDF):
 
 
 def pdf_individual(datos, usuario, generado):
-    talento, ultima = datos["talento"], datos["ultima"]
+    talento = datos["talento"]
+    ultima, nota = _evaluacion_detallada(datos)
     pdf = _PDF(usuario, generado)
     pdf.titulo("Reporte individual de talento")
+    # Foto de perfil (o el avatar genérico) a la derecha de los datos generales
+    arriba = pdf.get_y()
+    pdf.image(io.BytesIO(bytes(talento["foto"])) if talento.get("foto") else interfaz.AVATAR,
+              x=pdf.w - pdf.r_margin - LADO_FOTO, y=arriba, w=LADO_FOTO, h=LADO_FOTO)
     pdf.pares([("ID", talento["id_talento"]), ("Nombre", talento["nombre"]), ("Área", talento["area"]),
                ("Fecha de ingreso", fecha(talento["fecha_ingreso"])),
-               ("Desempeño previo", _desempeno(talento["desempeno_previo"]))])
+               ("Desempeño previo", _desempeno(talento["desempeno_previo"]))],
+              ancho=pdf.epw - LADO_FOTO - 5)
+    pdf.set_y(max(pdf.get_y(), arriba + LADO_FOTO))
 
     pdf.seccion("Resultado")
     if ultima is None:
@@ -408,6 +429,10 @@ def pdf_individual(datos, usuario, generado):
                    ("Nivel de potencial", nivel(ultima["potencial_crecimiento_nivel"])),
                    ("Clasificación 9-box", ultima["clasificacion_9box"]),
                    ("Fecha de evaluación", fecha(ultima["fecha_evaluacion"]))])
+        if nota:
+            pdf.set_font("Helvetica", "I", 9)
+            pdf.multi_cell(0, 5, nota, new_x="LMARGIN", new_y="NEXT")
+            pdf._texto()
         pdf.seccion("Niveles por criterio")
         criterios = list(analitica.NOMBRES_CRITERIOS.items())
         pdf.tabla(["Criterio", "Nivel"], [[nombre, nivel(ultima[llave])] for llave, nombre in criterios],
@@ -607,7 +632,8 @@ def excel_general(datos, usuario, generado):
 # --- Respaldo en texto (E-201 y E-202) ---
 
 def texto_individual(datos, usuario, generado):
-    talento, ultima = datos["talento"], datos["ultima"]
+    talento = datos["talento"]
+    ultima, nota = _evaluacion_detallada(datos)
     lineas = [f"{interfaz.NOMBRE} – Reporte individual de talento", "",
               *(f"{NOMBRES_CAMPOS[c]}: {_valor_texto(talento[c])}" for c in _COLUMNAS_TALENTO), ""]
     if ultima is None:
@@ -617,7 +643,7 @@ def texto_individual(datos, usuario, generado):
                    f"Puntuación de IA: {ultima['puntuacion_talento_por_ia']} de 100",
                    f"Nivel de potencial: {nivel(ultima['potencial_crecimiento_nivel'])}",
                    f"Clasificación 9-box: {ultima['clasificacion_9box']}",
-                   f"Fecha de evaluación: {fecha(ultima['fecha_evaluacion'])}", "",
+                   f"Fecha de evaluación: {fecha(ultima['fecha_evaluacion'])}", *([nota] if nota else []), "",
                    "NIVELES POR CRITERIO",
                    *(f"- {nombre}: {nivel(ultima[llave])}" for llave, nombre in analitica.NOMBRES_CRITERIOS.items()),
                    "", "REPORTE DE IA", ultima["reporte_ia"], ""]
@@ -695,6 +721,8 @@ def exportar(usuario, datos, formato, generado=None):
                "resultado": codigo or "generado"}
     if datos["tipo"] == "individual":
         id_registro = datos["talento"]["id_talento"]
+        if formato == "pdf" and datos.get("evaluacion"):
+            detalle["id_evaluacion"] = datos["evaluacion"]["id_evaluacion"]
     else:
         id_registro = None
         detalle["filtros"] = datos["filtros"]

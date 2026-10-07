@@ -1,9 +1,9 @@
 import streamlit as st
 
 from backend import alertas, auth, errores, ia, permisos, sesion
-from backend.interfaz import DESCRIPCION, NOMBRE, SIGNIFICADO
+from backend.interfaz import DESCRIPCION, LOGO, NOMBRE, SIGNIFICADO
 
-st.title(NOMBRE)
+st.image(LOGO, width=320)
 st.caption(f"{SIGNIFICADO} · {DESCRIPCION}")
 
 if st.session_state.pop("sesion_expirada", False):

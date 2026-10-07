@@ -58,6 +58,18 @@ def general():
     return {"tipo": "general", "filtros": filtros, **resumen, "talentos": talentos_}
 
 
+def test_pdf_de_una_evaluacion_anterior():
+    # Sin elegir, el PDF detalla la última; con una anterior, lo indica con la fecha de la más reciente
+    datos = _individual()
+    assert reportes._evaluacion_detallada(datos) == (datos["ultima"], None)
+    anterior = {**datos, "evaluacion": datos["evaluaciones"][0]}
+    evaluacion, nota = reportes._evaluacion_detallada(anterior)
+    assert evaluacion["id_evaluacion"] == 1 and "01/09/2026" in nota
+    assert reportes.pdf_individual(anterior, USUARIO, GENERADO).startswith(b"%PDF")
+    texto = reportes.texto_individual(anterior, USUARIO, GENERADO).decode("utf-8-sig")
+    assert "Puntuación de IA: 60 de 100" in texto and nota in texto
+
+
 def test_latin1():
     assert reportes.latin1("“Hola” – ‘sí’ … → ñ") == '"Hola" - \'sí\' ... -> ñ'
     assert reportes.latin1("日本") == "??"
@@ -165,7 +177,7 @@ def test_exportar_individual_registra_en_bitacora(administrador, evaluado):
     id_registro, detalle = _exportaciones(administrador["id_usuario"])
     assert id_registro == evaluado
     assert detalle == {"reporte": "individual", "formato": "pdf", "archivo": resultado["archivo"],
-                       "resultado": "generado"}
+                       "resultado": "generado", "id_evaluacion": datos["ultima"]["id_evaluacion"]}
 
 
 @pytest.mark.parametrize("formato, codigo", [("pdf", "E-201"), ("excel", "E-202")])

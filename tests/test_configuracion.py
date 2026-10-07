@@ -116,21 +116,35 @@ def test_secciones_del_encargado(administrador, encargado):
 def test_crear_editar_eliminar(administrador, encargado):
     problemas, id_manual = manuales.crear(administrador, {
         "seccion_software": "Bitácora", "contenido_texto": "Manual pytest de la bitácora",
-        "contenido_enlace": "https://ejemplo.com/manual"}, _png())
+        "contenido_enlace": "https://ejemplo.com/manual"}, [_png(), _png(6)])
     assert problemas == {}
-    assert _bitacora("alta", "Manuales")["id_registro_afectado"] == id_manual
+    alta = _bitacora("alta", "Manuales")
+    assert alta["id_registro_afectado"] == id_manual and json.loads(alta["detalle"])["imagenes"] == 2
 
     # El Encargado no ve la sección Bitácora; el Administrador sí
     assert id_manual in [m["id_manual"] for m in manuales.listar(administrador, texto="pytest de la bit")]
     assert id_manual not in [m["id_manual"] for m in manuales.listar(encargado)]
 
-    # Editar conserva la imagen si no se cambia y la quita si se pide
+    # Editar conserva las imágenes, agrega las nuevas al final y quita las que se piden
+    def imagenes():
+        manual = next(m for m in manuales.listar(administrador, "Bitácora") if m["id_manual"] == id_manual)
+        return manual, [m["id_imagen"] for m in manual["imagenes"]]
+
     assert manuales.editar(administrador, id_manual, {"seccion_software": "Bitácora",
                                                       "contenido_texto": "Nuevo texto"}) == {}
-    manual = next(m for m in manuales.listar(administrador, "Bitácora") if m["id_manual"] == id_manual)
-    assert manual["contenido_imagen"] and manual["contenido_enlace"] is None
+    manual, ids = imagenes()
+    assert len(ids) == 2 and manual["contenido_enlace"] is None
+    assert manuales.editar(administrador, id_manual, {"seccion_software": "Bitácora", "contenido_texto": "x"},
+                           nuevas=[_png(8)], quitar=[ids[0]]) == {}
+    manual, nuevos_ids = imagenes()
+    assert nuevos_ids[0] == ids[1] and len(nuevos_ids) == 2
+    assert bytes(manual["imagenes"][1]["imagen"]) == _png(8)
+    # Sin texto ni enlace, quitar todas las imágenes deja el manual vacío
     assert set(manuales.editar(administrador, id_manual, {"seccion_software": "Bitácora"},
-                               quitar_imagen=True)) == {"contenido_texto"}
+                               quitar=nuevos_ids)) == {"contenido_texto"}
+    # Máximo de imágenes por manual
+    assert set(manuales.editar(administrador, id_manual, {"seccion_software": "Bitácora", "contenido_texto": "x"},
+                               nuevas=[_png()] * (manuales.MAX_IMAGENES - 1))) == {"imagenes"}
     assert _bitacora("edicion", "Manuales")["id_registro_afectado"] == id_manual
 
     with pytest.raises(errores.ErrorSistema) as error:
@@ -138,12 +152,15 @@ def test_crear_editar_eliminar(administrador, encargado):
     assert error.value.codigo == "E-304"
     manuales.eliminar(administrador, id_manual)
     assert id_manual not in [m["id_manual"] for m in manuales.listar(administrador)]
+    with db.transaccion() as cursor:
+        cursor.execute("SELECT COUNT(*) AS n FROM Manual_imagenes WHERE id_manual = %s", (id_manual,))
+        assert cursor.fetchone()["n"] == 0
     assert _bitacora("eliminacion", "Manuales")["id_registro_afectado"] == id_manual
 
 
 def test_imagen_invalida_no_se_guarda(administrador):
     with pytest.raises(errores.ErrorSistema) as error:
-        manuales.crear(administrador, {"seccion_software": "Reportes", "contenido_texto": "x"}, b"GIF89a")
+        manuales.crear(administrador, {"seccion_software": "Reportes", "contenido_texto": "x"}, [_png(), b"GIF89a"])
     assert error.value.codigo == "E-402"
 
 

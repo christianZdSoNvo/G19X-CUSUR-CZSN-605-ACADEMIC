@@ -14,9 +14,10 @@ RANGOS = {"bajo": (0, 30), "medio": (31, 70), "alto": (71, 100)}
 CRITERIOS = ("desempeno_pre_ev", "resultados_cap_ev", "experiencia_lab_ev", "objetivos_fut_ev",
              "competencias_ev", "liderazgo_prev_ev")
 LLAVES = (*CRITERIOS, "potencial_crecimiento_nivel", "puntuacion_talento_por_ia", "reporte_ia")
-# Al modelo se le piden hasta 900 caracteres; se aceptan hasta 1000 como margen para que
-# el límite del esquema no corte el reporte a media frase
-MAX_REPORTE = 1000
+# Al modelo se le piden hasta 1000 caracteres. No puede contarlos con exactitud, así que
+# no hay mínimo y se aceptan hasta 1200 como margen; si aun así llega al límite del
+# esquema (que corta el texto), se recorta en la última oración completa.
+MAX_REPORTE = 1200
 # Tiempo que Ollama conserva el modelo en memoria tras la última llamada
 MANTENER_CARGADO = "30m"
 
@@ -35,7 +36,7 @@ ESQUEMA = {
 PROMPT = """Eres un agente evaluador de talento humano.
 Tu tarea es analizar perfiles de empleados según criterios definidos.
 Evalúa cada criterio con un nivel: alto, medio o bajo (en minúsculas), exceptuando los criterios reporte y puntuación.
-En el criterio reporte, genera un texto donde se comience por el nombre del talento, siguiendo por su evaluación general explicada en un texto, en el que menciones razones y porque de sus evaluaciones, el texto puede tener hasta 900 caracteres, todo se trabajará en el idioma español latino.
+En el criterio reporte, genera un texto donde se comience por el nombre del talento, siguiendo por su evaluación general explicada en un texto, en el que menciones razones y porque de sus evaluaciones. Termina el reporte con una sugerencia sobre acciones y proyectos que se pueden aplicar al talento. El texto puede tener hasta 1000 caracteres, todo se trabajará en el idioma español latino.
 En el criterio puntuación, asigna una nota de 0 a 100 que corresponda al nivel que diste en potencial de crecimiento (bajo -> 0 - 30, medio -> 31 – 70, alto -> 71 – 100). La nota va en su propia llave, no dentro del reporte.
 Devuelve únicamente un objeto JSON, sin texto adicional, con exactamente estas llaves:
 {
@@ -47,7 +48,7 @@ Devuelve únicamente un objeto JSON, sin texto adicional, con exactamente estas 
   "liderazgo_prev_ev": "alto | medio | bajo",
   "potencial_crecimiento_nivel": "alto | medio | bajo",
   "puntuacion_talento_por_ia": número entero de 0 a 100,
-  "reporte_ia": "texto de hasta 900 caracteres"
+  "reporte_ia": "texto de hasta 1000 caracteres"
 }
 
 Criterios de evaluación:
@@ -103,6 +104,13 @@ def nivel_de_puntuacion(puntuacion):
     return None
 
 
+def recortar_reporte(reporte):
+    # El esquema corta el reporte en MAX_REPORTE caracteres, a veces a media frase: se
+    # conserva hasta la última oración completa (si queda al menos la mitad del texto)
+    fin = reporte[:MAX_REPORTE].rfind(".")
+    return reporte[:fin + 1] if fin >= MAX_REPORTE // 2 else reporte
+
+
 def validar_respuesta(texto):
     # Devuelve (evaluación lista para guardar, None) o (None, motivo del rechazo)
     try:
@@ -129,6 +137,8 @@ def validar_respuesta(texto):
     evaluacion["puntuacion_talento_por_ia"] = puntuacion
 
     reporte = datos["reporte_ia"].strip() if isinstance(datos["reporte_ia"], str) else ""
+    if len(reporte) >= MAX_REPORTE:
+        reporte = recortar_reporte(reporte)
     if not reporte or len(reporte) > MAX_REPORTE:
         return None, f"reporte vacío o de más de {MAX_REPORTE} caracteres"
     evaluacion["reporte_ia"] = reporte

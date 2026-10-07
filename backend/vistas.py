@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from backend import analitica, errores, graficas, manuales, parametros
-from backend.interfaz import NOMBRE
+from backend.interfaz import AVATAR, NOMBRE
 
 # Vistas compartidas entre páginas: historial (su página y el drill-down de paneles),
 # manuales y contacto de soporte (Soporte, Manuales y Configuración)
@@ -14,6 +14,48 @@ ASUNTO_SOPORTE = f"Soporte – {NOMBRE}"
 
 def fecha(valor):
     return valor.strftime("%d/%m/%Y") if valor else ""
+
+
+def foto_perfil(foto, ancho=110):
+    # Foto de perfil de un talento o usuario; sin foto, el avatar genérico
+    st.image(bytes(foto) if foto else AVATAR, width=ancho)
+
+
+def encabezado_talento(talento, detalle):
+    # Foto, nombre y una línea de datos del talento (Talentos, Historial y Reportes)
+    foto, datos = st.columns([1, 5], vertical_alignment="center")
+    with foto:
+        foto_perfil(talento.get("foto"))
+    datos.subheader(talento["nombre"])
+    datos.caption(detalle)
+
+
+def editor_foto(clave, actual, cambiar):
+    # Cargar o quitar una foto de perfil. cambiar(bytes o None) la guarda; devuelve el
+    # texto del aviso si hubo cambio. E-402 se muestra aquí mismo.
+    version = st.session_state.get(f"{clave}_version", 0)
+    archivo = st.file_uploader("Foto de perfil (PNG o JPG, máximo 5 MB)", type=["png", "jpg", "jpeg"],
+                               key=f"{clave}_archivo_{version}")
+    guardar, quitar = st.columns(2)
+    try:
+        if guardar.button("Guardar foto", type="primary", disabled=archivo is None, width="stretch",
+                          key=f"{clave}_guardar"):
+            cambiar(archivo.getvalue())
+            aviso = "Se actualizó la foto de perfil."
+        elif actual and quitar.button("Quitar foto", width="stretch", key=f"{clave}_quitar"):
+            cambiar(None)
+            aviso = "Se quitó la foto de perfil."
+        else:
+            return None
+    except errores.ErrorSistema as error:
+        if error.codigo != "E-402":
+            raise
+        st.error(error.mensaje)
+        st.caption("Código de error: E-402")
+        return None
+    # Una clave nueva vacía el selector de archivo
+    st.session_state[f"{clave}_version"] = version + 1
+    return aviso
 
 
 def historial_talento(usuario, talento, clave):
@@ -48,6 +90,19 @@ def enlace_correo(correo, codigo=""):
     cuerpo = f"Código de error: {codigo}\n\n" if codigo else ""
     cuerpo += "Describa qué estaba haciendo y qué ocurrió:\n"
     return f"mailto:{correo}?subject={quote(ASUNTO_SOPORTE)}&body={quote(cuerpo)}"
+
+
+def contacto_talento(talento):
+    # Datos para ponerse en contacto con el talento (Reportes); el correo abre el cliente
+    # de correo del equipo, porque el sistema no envía correos
+    with st.container(border=True):
+        st.markdown("**Contacto del talento**")
+        correo, telefono = st.columns(2)
+        correo.caption("Correo")
+        correo.code(talento["correo"], language=None)
+        telefono.caption("Teléfono")
+        telefono.code(talento["tel_mx"], language=None)
+        st.link_button("Escribir correo al talento", f"mailto:{talento['correo']}", icon=":material/mail:")
 
 
 def contacto_soporte(clave):
@@ -92,8 +147,8 @@ def consulta_manuales(usuario, clave):
 def mostrar_manual(manual):
     if manual["contenido_texto"]:
         st.write(manual["contenido_texto"])
-    if manual["contenido_imagen"]:
-        st.image(bytes(manual["contenido_imagen"]))
+    for imagen in manual["imagenes"]:
+        st.image(bytes(imagen["imagen"]))
     if manual["contenido_enlace"]:
         st.markdown(f"[{manual['contenido_enlace']}]({manual['contenido_enlace']})")
     st.caption(f"Actualizado el {manual['fecha_actualizacion']:%d/%m/%Y} por {manual['edito']}.")

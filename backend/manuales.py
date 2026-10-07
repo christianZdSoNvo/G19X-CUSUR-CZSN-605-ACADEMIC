@@ -21,6 +21,7 @@ SECCIONES = {
     "Soporte": "soporte",
 }
 MAX_IMAGEN = 5 * 1024 * 1024
+MAX_IMAGENES = 10   # por manual
 MAX_ENLACE = 255
 # Firmas de PNG y JPG: se revisa el contenido, no solo la extensión
 _FIRMAS = {b"\x89PNG\r\n\x1a\n": "png", b"\xff\xd8\xff": "jpg"}
@@ -53,7 +54,7 @@ def limpiar(datos):
 
 
 def validar(datos, con_imagen):
-    # Devuelve {campo: mensaje}; la imagen se valida aparte (E-402)
+    # Devuelve {campo: mensaje}; las imágenes se validan aparte (E-402 y cantidad máxima)
     problemas = {}
     if datos["seccion_software"] not in SECCIONES:
         problemas["seccion_software"] = "Seleccione una sección del sistema."
@@ -66,7 +67,8 @@ def validar(datos, con_imagen):
 
 
 def listar(usuario, seccion=None, texto=""):
-    # Manuales que el usuario puede ver, con filtro por sección y búsqueda en el texto
+    # Manuales que el usuario puede ver, con filtro por sección y búsqueda en el texto;
+    # cada uno trae sus imágenes en orden ("imagenes": [{"id_imagen", "imagen"}])
     permitidas = secciones_permitidas(usuario)
     if seccion:
         permitidas = [s for s in permitidas if s == seccion]
@@ -80,13 +82,26 @@ def listar(usuario, seccion=None, texto=""):
         valores += [f"%{texto}%"] * 2
     with db.transaccion() as cursor:
         cursor.execute(
-            "SELECT m.id_manual, m.seccion_software, m.contenido_texto, m.contenido_imagen, "
-            "m.contenido_enlace, m.fecha_actualizacion, u.nombre AS edito "
+            "SELECT m.id_manual, m.seccion_software, m.contenido_texto, m.contenido_enlace, "
+            "m.fecha_actualizacion, u.nombre AS edito "
             "FROM Manuales m JOIN Usuarios u ON u.id_usuario = m.id_usuario_edito "
             f"WHERE {' AND '.join(condiciones)} ORDER BY m.seccion_software, m.id_manual",
             valores,
         )
         manuales = cursor.fetchall()
+        imagenes = {}
+        if manuales:
+            ids = [m["id_manual"] for m in manuales]
+            cursor.execute(
+                "SELECT id_imagen, id_manual, imagen FROM Manual_imagenes "
+                f"WHERE id_manual IN ({', '.join(['%s'] * len(ids))}) ORDER BY id_manual, orden, id_imagen",
+                ids,
+            )
+            for fila in cursor.fetchall():
+                imagenes.setdefault(fila["id_manual"], []).append(
+                    {"id_imagen": fila["id_imagen"], "imagen": fila["imagen"]})
+    for manual in manuales:
+        manual["imagenes"] = imagenes.get(manual["id_manual"], [])
     orden = list(SECCIONES)
     return sorted(manuales, key=lambda m: (orden.index(m["seccion_software"]), m["id_manual"]))
 
@@ -95,67 +110,93 @@ def hay_manuales(usuario):
     return bool(listar(usuario))
 
 
-def _detalle(datos, imagen):
-    # La imagen no va a la bitácora, solo si se agregó
-    return {**datos, "contenido_texto": (datos["contenido_texto"] or "")[:200],
-            "imagen": "sí" if imagen else "no"}
+def _detalle(datos, imagenes):
+    # Las imágenes no van a la bitácora, solo cuántas tiene el manual
+    return {**datos, "contenido_texto": (datos["contenido_texto"] or "")[:200], "imagenes": imagenes}
 
 
-def crear(usuario, datos, imagen=None):
+def _validar_imagenes(nuevas, total):
+    # Cada imagen: PNG/JPG de hasta 5 MB (E-402); en total, hasta MAX_IMAGENES por manual
+    for imagen in nuevas:
+        validar_imagen(imagen)
+    if total > MAX_IMAGENES:
+        return {"imagenes": f"Un manual puede tener hasta {MAX_IMAGENES} imágenes."}
+    return {}
+
+
+def _agregar_imagenes(cursor, id_manual, nuevas):
+    # Las imágenes nuevas van al final, en el orden en que se eligieron
+    cursor.execute("SELECT COALESCE(MAX(orden), 0) AS ultimo FROM Manual_imagenes WHERE id_manual = %s",
+                   (id_manual,))
+    ultimo = cursor.fetchone()["ultimo"]
+    for posicion, imagen in enumerate(nuevas, start=ultimo + 1):
+        cursor.execute("INSERT INTO Manual_imagenes (id_manual, orden, imagen) VALUES (%s, %s, %s)",
+                       (id_manual, posicion, imagen))
+
+
+def crear(usuario, datos, imagenes=()):
     # Devuelve (problemas, id_manual)
     permisos.exigir(usuario, "editar_manuales")
     datos = limpiar(datos)
-    problemas = validar(datos, imagen is not None)
+    imagenes = list(imagenes)
+    problemas = validar(datos, bool(imagenes))
     if problemas:
         return problemas, None
-    if imagen is not None:
-        validar_imagen(imagen)
+    problemas = _validar_imagenes(imagenes, len(imagenes))
+    if problemas:
+        return problemas, None
     with db.transaccion() as cursor:
         cursor.execute(
-            "INSERT INTO Manuales (seccion_software, contenido_texto, contenido_imagen, contenido_enlace, "
-            "id_usuario_edito) VALUES (%s, %s, %s, %s, %s)",
-            (datos["seccion_software"], datos["contenido_texto"], imagen, datos["contenido_enlace"],
-             usuario["id_usuario"]),
+            "INSERT INTO Manuales (seccion_software, contenido_texto, contenido_enlace, id_usuario_edito) "
+            "VALUES (%s, %s, %s, %s)",
+            (datos["seccion_software"], datos["contenido_texto"], datos["contenido_enlace"], usuario["id_usuario"]),
         )
         id_manual = cursor.lastrowid
+        _agregar_imagenes(cursor, id_manual, imagenes)
         bitacora.registrar(cursor, usuario["id_usuario"], "alta", "Manuales", id_manual,
-                           _detalle(datos, imagen is not None))
+                           _detalle(datos, len(imagenes)))
     return {}, id_manual
 
 
-def editar(usuario, id_manual, datos, imagen=None, quitar_imagen=False):
-    # imagen=None conserva la actual, salvo que se pida quitarla
+def editar(usuario, id_manual, datos, nuevas=(), quitar=()):
+    # nuevas: imágenes que se agregan al final; quitar: id_imagen de las que se eliminan.
+    # Las demás imágenes se conservan.
     permisos.exigir(usuario, "editar_manuales")
     datos = limpiar(datos)
+    nuevas, quitar = list(nuevas), set(quitar)
     with db.transaccion() as cursor:
-        cursor.execute("SELECT contenido_imagen IS NOT NULL AS tiene_imagen FROM Manuales "
-                       "WHERE id_manual = %s", (id_manual,))
-        fila = cursor.fetchone()
-    if fila is None:
-        raise errores.ErrorSistema("E-003")
-    con_imagen = imagen is not None or (fila["tiene_imagen"] and not quitar_imagen)
-    problemas = validar(datos, con_imagen)
+        cursor.execute("SELECT id_manual FROM Manuales WHERE id_manual = %s", (id_manual,))
+        if cursor.fetchone() is None:
+            raise errores.ErrorSistema("E-003")
+        cursor.execute("SELECT id_imagen FROM Manual_imagenes WHERE id_manual = %s", (id_manual,))
+        actuales = {fila["id_imagen"] for fila in cursor.fetchall()}
+    quitar &= actuales
+    total = len(actuales) - len(quitar) + len(nuevas)
+    problemas = validar(datos, total > 0)
     if problemas:
         return problemas
-    if imagen is not None:
-        validar_imagen(imagen)
+    problemas = _validar_imagenes(nuevas, total)
+    if problemas:
+        return problemas
 
-    columnas = ["seccion_software = %s", "contenido_texto = %s", "contenido_enlace = %s",
-                "id_usuario_edito = %s", "fecha_actualizacion = NOW()"]
-    valores = [datos["seccion_software"], datos["contenido_texto"], datos["contenido_enlace"],
-               usuario["id_usuario"]]
-    if imagen is not None or quitar_imagen:
-        columnas.append("contenido_imagen = %s")
-        valores.append(imagen)
     with db.transaccion() as cursor:
-        cursor.execute(f"UPDATE Manuales SET {', '.join(columnas)} WHERE id_manual = %s",
-                       (*valores, id_manual))
+        cursor.execute(
+            "UPDATE Manuales SET seccion_software = %s, contenido_texto = %s, contenido_enlace = %s, "
+            "id_usuario_edito = %s, fecha_actualizacion = NOW() WHERE id_manual = %s",
+            (datos["seccion_software"], datos["contenido_texto"], datos["contenido_enlace"],
+             usuario["id_usuario"], id_manual),
+        )
+        if quitar:
+            cursor.execute(f"DELETE FROM Manual_imagenes WHERE id_imagen IN ({', '.join(['%s'] * len(quitar))})",
+                           list(quitar))
+        _agregar_imagenes(cursor, id_manual, nuevas)
         bitacora.registrar(cursor, usuario["id_usuario"], "edicion", "Manuales", id_manual,
-                           _detalle(datos, con_imagen))
+                           _detalle(datos, total))
     return {}
 
 
 def eliminar(usuario, id_manual):
+    # Sus imágenes se borran con él (ON DELETE CASCADE)
     permisos.exigir(usuario, "editar_manuales")
     with db.transaccion() as cursor:
         cursor.execute("SELECT seccion_software FROM Manuales WHERE id_manual = %s", (id_manual,))

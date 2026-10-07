@@ -2,7 +2,7 @@ import time
 
 import streamlit as st
 
-from backend import auth
+from backend import auth, usuarios
 
 # Datos de la sesión en st.session_state (PRD, 12.2)
 
@@ -14,6 +14,18 @@ def iniciar(usuario):
 
 def usuario_actual():
     return st.session_state.get("usuario")
+
+
+def foto_usuario():
+    # La foto se lee una vez por sesión y se guarda en st.session_state, porque la barra
+    # lateral la muestra en cada interacción
+    if "foto_usuario" not in st.session_state:
+        st.session_state["foto_usuario"] = usuarios.foto(usuario_actual()["id_usuario"])
+    return st.session_state["foto_usuario"]
+
+
+def guardar_foto(foto):
+    st.session_state["foto_usuario"] = foto
 
 
 def revisar_inactividad():

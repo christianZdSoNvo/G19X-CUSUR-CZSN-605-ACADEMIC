@@ -37,6 +37,5 @@ if id_elegido is None:
     st.stop()
 
 talento = talentos.obtener(usuario, id_elegido)
-st.subheader(talento["nombre"])
-st.caption(f"{talento['area']} · Ingreso: {vistas.fecha(talento['fecha_ingreso'])}")
+vistas.encabezado_talento(talento, f"{talento['area']} · Ingreso: {vistas.fecha(talento['fecha_ingreso'])}")
 vistas.historial_talento(usuario, talento, "historial")

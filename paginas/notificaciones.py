@@ -13,7 +13,8 @@ NOMBRE_GRADO = {"bajo": "Bajo", "medio": "Medio", "alto": "Alto"}
 # Colores del sistema por grado: rojo (alto), dorado (medio) y azul oscuro (bajo)
 COLOR_GRADO = {"alto": ("#B22234", "#FFFFFF"), "medio": ("#C9A227", "#0B1F3A"), "bajo": ("#0B1F3A", "#FFFFFF")}
 MARKDOWN_GRADO = {"alto": "red", "medio": "orange", "bajo": "blue"}
-CAMPOS_NUEVA = ("noti_tipo", "noti_destinatario", "noti_talento", "noti_grado", "noti_texto")
+VALORES_INICIALES = {"noti_tipo": notificaciones.TIPOS_MANUALES[0], "noti_destinatario": None,
+                     "noti_talento": None, "noti_grado": "bajo", "noti_texto": ""}
 
 
 def avisar(texto):
@@ -121,8 +122,16 @@ def nueva():
         st.info("No hay destinatarios disponibles.")
         return
     por_id = {d["id_usuario"]: d for d in lista_destinatarios}
+    if st.session_state.pop("noti_limpiar", False):
+        # Tras enviar, el formulario queda en blanco: borrar las claves no basta, porque el
+        # navegador vuelve a mandar lo que tenía escrito; hay que asignar los valores iniciales
+        st.session_state.update(VALORES_INICIALES)
+    # Tipo y grado toman su valor inicial aquí (no con index/default) para poder reiniciarlos
+    st.session_state.setdefault("noti_tipo", VALORES_INICIALES["noti_tipo"])
+    st.session_state.setdefault("noti_grado", VALORES_INICIALES["noti_grado"])
 
-    tipo = st.selectbox("Tipo", notificaciones.TIPOS_MANUALES, format_func=notificaciones.TIPOS.get, key="noti_tipo")
+    tipo = st.selectbox("Tipo", notificaciones.TIPOS_MANUALES, format_func=notificaciones.TIPOS.get, index=None,
+                        key="noti_tipo")
     if not es_administrador and len(por_id) == 1:
         # El Encargado escribe al Administrador (PRD, 6.7)
         id_destinatario = next(iter(por_id))
@@ -144,7 +153,7 @@ def nueva():
         placeholder="Ninguno", key="noti_talento",
         format_func=lambda i: f"{i} - {opciones[i]['nombre']} ({opciones[i]['area']})")
     grado = st.segmented_control("Grado de emergencia", notificaciones.GRADOS, format_func=NOMBRE_GRADO.get,
-                                 default="bajo", required=True, key="noti_grado")
+                                 required=True, key="noti_grado")
     ultimo_codigo = st.session_state.get("ultimo_codigo_error")
     if tipo == "error_sistema" and ultimo_codigo:
         st.caption(f"Último código de error de esta sesión: **{ultimo_codigo}** (inclúyalo en el texto).")
@@ -173,8 +182,7 @@ def nueva():
         if problemas:
             errores_de(problemas)
             return
-        for campo in CAMPOS_NUEVA:
-            st.session_state.pop(campo, None)
+        st.session_state["noti_limpiar"] = True
         avisar(f"Se envió la notificación a {nombre_destinatario}.")
 
 

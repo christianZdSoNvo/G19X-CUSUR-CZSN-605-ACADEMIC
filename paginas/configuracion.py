@@ -1,6 +1,6 @@
 import streamlit as st
 
-from backend import permisos, sesion, vistas
+from backend import permisos, sesion, usuarios, vistas
 from backend.interfaz import TEMAS, aplicar_tema, formulario_contrasena
 
 usuario = sesion.usuario_actual()
@@ -8,7 +8,22 @@ permisos.exigir(usuario, "configuracion_general")
 
 st.title("Configuración")
 
-# Configuración general (PRD, 13.4): contraseña, tema, contacto de soporte y cerrar sesión
+# Configuración general (PRD, 13.4): foto de perfil, contraseña, tema, contacto de soporte
+# y cerrar sesión
+st.subheader("Foto de perfil")
+aviso = st.session_state.pop("aviso_foto", None)
+if aviso:
+    st.success(aviso)
+foto, editor = st.columns([1, 3])
+with foto:
+    vistas.foto_perfil(sesion.foto_usuario())
+with editor:
+    aviso = vistas.editor_foto("foto_usuario", sesion.foto_usuario(),
+                               lambda nueva: sesion.guardar_foto(usuarios.cambiar_foto(usuario, nueva)))
+if aviso:
+    st.session_state["aviso_foto"] = aviso
+    st.rerun()
+
 st.subheader("Cambiar contraseña")
 if st.session_state.pop("contrasena_cambiada", False):
     st.success("Contraseña actualizada.")

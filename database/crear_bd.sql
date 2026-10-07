@@ -6,7 +6,7 @@
 --
 -- QUÉ HACE ESTE SCRIPT
 --   1. Crea la base de datos proyecto_talentos.
---   2. Crea las 9 tablas del modelo de datos.
+--   2. Crea las 10 tablas del modelo de datos.
 --   3. Crea el usuario de MySQL de la aplicación con privilegios mínimos.
 --   4. Carga las claves iniciales de Configuracion_sistema.
 --   5. Crea el Administrador de RH inicial.
@@ -65,7 +65,7 @@ USE proyecto_talentos;
 -- 2. Tablas
 -- ---------------------------------------------------------------------
 -- Orden de creación según las llaves foráneas:
--- Usuarios -> Talentos -> Evaluaciones -> Eventos_talento -> Manuales
+-- Usuarios -> Talentos -> Evaluaciones -> Eventos_talento -> Manuales -> Manual_imagenes
 -- -> Notificaciones -> Bitacora -> Alertas_config -> Configuracion_sistema
 
 -- 9.3 Usuarios
@@ -84,6 +84,7 @@ CREATE TABLE Usuarios (
     fecha_cambio_contrasena DATE         NOT NULL,
     debe_cambiar_contrasena BOOLEAN      DEFAULT TRUE,
     tel_mx                  VARCHAR(10)  NOT NULL,
+    foto                    MEDIUMBLOB   DEFAULT NULL,   -- foto de perfil (JPG 400 x 400)
     CONSTRAINT uq_usuarios_usuario UNIQUE (usuario),
     CONSTRAINT uq_usuarios_correo  UNIQUE (correo),
     CONSTRAINT ck_usuarios_tel     CHECK (tel_mx REGEXP '^[0-9]{10}$')
@@ -107,6 +108,7 @@ CREATE TABLE Talentos (
     fecha_baja         DATE         DEFAULT NULL,
     motivo_baja        VARCHAR(200) DEFAULT NULL,
     fecha_modificacion DATE         NOT NULL,
+    foto               MEDIUMBLOB   DEFAULT NULL,   -- foto de perfil (JPG 400 x 400)
     CONSTRAINT uq_talentos_correo    UNIQUE (correo),
     CONSTRAINT ck_talentos_tel       CHECK (tel_mx REGEXP '^[0-9]{10}$'),
     CONSTRAINT ck_talentos_desempeno CHECK (desempeno_previo BETWEEN 0 AND 100),
@@ -169,13 +171,23 @@ CREATE TABLE Manuales (
     id_manual           INT AUTO_INCREMENT PRIMARY KEY,
     seccion_software    VARCHAR(40),
     contenido_texto     LONGTEXT,
-    contenido_imagen    LONGBLOB,
     fecha_actualizacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     id_usuario_edito    INT      NOT NULL,
     contenido_enlace    VARCHAR(255),
     CONSTRAINT fk_manuales_usuario FOREIGN KEY (id_usuario_edito)
         REFERENCES Usuarios (id_usuario),
     INDEX ix_manuales_seccion (seccion_software)
+) ENGINE = InnoDB;
+
+-- 9.4.1 Imágenes de los manuales (varias por manual, en orden)
+CREATE TABLE Manual_imagenes (
+    id_imagen INT AUTO_INCREMENT PRIMARY KEY,
+    id_manual INT        NOT NULL,
+    orden     SMALLINT   NOT NULL,          -- 1, 2, 3... en el orden en que se muestran
+    imagen    MEDIUMBLOB NOT NULL,          -- PNG o JPG de hasta 5 MB
+    CONSTRAINT fk_manual_imagenes_manual FOREIGN KEY (id_manual)
+        REFERENCES Manuales (id_manual) ON DELETE CASCADE,
+    INDEX ix_manual_imagenes_orden (id_manual, orden)
 ) ENGINE = InnoDB;
 
 -- 9.5 Notificaciones
@@ -278,6 +290,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON proyecto_talentos.Talentos              
 GRANT SELECT, INSERT, UPDATE, DELETE ON proyecto_talentos.Evaluaciones          TO 'app_talentos'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON proyecto_talentos.Eventos_talento       TO 'app_talentos'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON proyecto_talentos.Manuales              TO 'app_talentos'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON proyecto_talentos.Manual_imagenes       TO 'app_talentos'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON proyecto_talentos.Notificaciones        TO 'app_talentos'@'localhost';
 GRANT SELECT, INSERT                 ON proyecto_talentos.Bitacora              TO 'app_talentos'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON proyecto_talentos.Alertas_config        TO 'app_talentos'@'localhost';

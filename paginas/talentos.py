@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import streamlit as st
 
-from backend import catalogos, errores, evaluaciones, ia, permisos, sesion, talentos
+from backend import catalogos, errores, evaluaciones, ia, permisos, sesion, talentos, vistas
 
 usuario = sesion.usuario_actual()
 permisos.exigir(usuario, "ver_talentos")
@@ -275,10 +275,15 @@ def lista():
     if talento is None or not talento["activo"]:
         st.warning(talentos.NO_IDENTIFICADO)
         return
-    st.subheader(talento["nombre"])
+    vistas.encabezado_talento(talento, f"ID {talento['id_talento']} · {talento['area']}")
     pestana_datos, pestana_ia = st.tabs(["Datos del talento", "Evaluación con IA"])
     with pestana_datos:
         if puede_editar:
+            with st.expander("Foto de perfil"):
+                aviso = vistas.editor_foto(f"foto_talento_{talento['id_talento']}", talento["foto"],
+                                           lambda foto: talentos.cambiar_foto(usuario, talento["id_talento"], foto))
+                if aviso:
+                    avisar(f"{aviso[:-1]} de {talento['nombre']}.")
             edicion(talento)
         else:
             ficha(talento)

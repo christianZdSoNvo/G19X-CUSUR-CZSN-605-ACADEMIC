@@ -75,11 +75,26 @@ def reporte_individual():
     if not tabla.selection.rows:
         return
 
-    elegido = resultados[tabla.selection.rows[0]]
-    st.subheader(elegido["nombre"])
-    st.caption(f"ID {elegido['id_talento']} · {elegido['area']} · Ingreso: {vistas.fecha(elegido['fecha_ingreso'])}")
-    exportacion(f"individual_{elegido['id_talento']}",
-                lambda: reportes.datos_individual(usuario, elegido["id_talento"]))
+    elegido = talentos.obtener(usuario, resultados[tabla.selection.rows[0]]["id_talento"])
+    vistas.encabezado_talento(elegido, f"ID {elegido['id_talento']} · {elegido['area']} · "
+                                       f"Ingreso: {vistas.fecha(elegido['fecha_ingreso'])}")
+    vistas.contacto_talento(elegido)
+
+    # Evaluación que se detalla en el PDF (la más reciente si no se elige otra); el Excel
+    # siempre trae todas las evaluaciones
+    lista = list(reversed(analitica.historial(usuario, elegido["id_talento"])["evaluaciones"]))
+    id_evaluacion = None
+    if len(lista) > 1:
+        por_id = {e["id_evaluacion"]: e for e in lista}
+        id_evaluacion = st.selectbox(
+            "Evaluación del PDF", list(por_id), key=f"rep_evaluacion_{elegido['id_talento']}",
+            format_func=lambda i: (f"{vistas.fecha(por_id[i]['fecha_evaluacion'])} · "
+                                   f"{por_id[i]['puntuacion_talento_por_ia']} puntos · potencial "
+                                   f"{por_id[i]['potencial_crecimiento_nivel']}"
+                                   + (" (la más reciente)" if i == lista[0]["id_evaluacion"] else "")),
+            help="El PDF detalla la evaluación elegida; el Excel incluye todas las evaluaciones.")
+    exportacion(f"individual_{elegido['id_talento']}_{id_evaluacion}",
+                lambda: reportes.datos_individual(usuario, elegido["id_talento"], id_evaluacion))
 
 
 # --- Reporte general: mismos filtros que los paneles (PRD, 6.4) ---

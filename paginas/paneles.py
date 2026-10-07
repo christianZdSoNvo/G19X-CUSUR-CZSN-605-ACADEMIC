@@ -3,7 +3,7 @@ import math
 import pandas as pd
 import streamlit as st
 
-from backend import analitica, catalogos, evaluaciones, graficas, permisos, sesion, vistas
+from backend import analitica, catalogos, evaluaciones, graficas, menu, permisos, sesion, talentos, vistas
 
 usuario = sesion.usuario_actual()
 permisos.exigir(usuario, "paneles")
@@ -11,9 +11,28 @@ st.set_page_config(layout="wide")
 
 FILTROS = ("filtro_area", "filtro_niveles", "filtro_9box", "filtro_fechas", "filtro_puntuacion", "filtro_antiguedad")
 
+# Paneles elegidos en el menú (app.py los pone debajo de "Paneles analíticos"); sin elegir
+# ninguno se muestran todos
+elegidos = st.session_state.get(menu.CLAVE_PANELES) or list(menu.PANELES)
+
 
 def nombre_nivel(nivel):
     return graficas.NOMBRE_NIVEL[nivel]
+
+
+def ver(nombre):
+    return nombre in elegidos
+
+
+def explicar(nombre):
+    st.caption(menu.PANELES[nombre])
+
+
+def lado_a_lado(izquierdo, derecho):
+    # Si se muestran los dos paneles del renglón, uno junto al otro; si solo uno, a todo lo ancho
+    if ver(izquierdo) and ver(derecho):
+        return st.columns(2)
+    return [st.container() if ver(izquierdo) else None, st.container() if ver(derecho) else None]
 
 
 # --- Drill-down (PRD, 13.1): área -> nivel -> talentos -> perfil; celda del 9-box -> talentos ---
@@ -56,6 +75,7 @@ def grafica_distribucion(datos):
             seleccionar({"area": area, "nivel": nivel})
         if st.button("← Todas las áreas", key="volver_areas"):
             seleccionar({})
+        explicar("Distribución por nivel de potencial")
         st.caption("Haga clic en una barra para ver la lista de talentos de ese nivel.")
     else:
         st.markdown("**Distribución por nivel de potencial**")
@@ -64,6 +84,7 @@ def grafica_distribucion(datos):
         area = punto(evento, "x")
         if area:
             seleccionar({"area": area})
+        explicar("Distribución por nivel de potencial")
         st.caption("Haga clic en un área para ver su desglose por nivel.")
 
 
@@ -76,6 +97,7 @@ def grafica_9box(datos):
     if celda:
         seleccionar({"celda": celda})
     sin_clasificar = conteo[evaluaciones.SIN_CLASIFICAR]
+    explicar("Matriz 9-box")
     st.caption("Haga clic en una celda para ver sus talentos."
                + (f" Sin clasificar (sin desempeño previo): {sin_clasificar}." if sin_clasificar else ""))
 
@@ -119,8 +141,8 @@ def detalle(datos):
         return
 
     talento = grupo.iloc[filas[0]]
-    st.markdown(f"### {talento['nombre']}")
-    st.caption(f"{talento['area']} · Ingreso: {vistas.fecha(talento['fecha_ingreso'])}")
+    vistas.encabezado_talento(talentos.obtener(usuario, int(talento["id_talento"])),
+                              f"{talento['area']} · Ingreso: {vistas.fecha(talento['fecha_ingreso'])}")
     potencial, puntuacion, desempeno = st.columns(3)
     potencial.metric("Potencial de crecimiento", nombre_nivel(talento["potencial_crecimiento_nivel"]))
     puntuacion.metric("Puntuación", int(talento["puntuacion_talento_por_ia"]))
@@ -179,42 +201,60 @@ if filtrado.empty:
     st.stop()
 
 resumen = analitica.indicadores(filtrado, todas)
-tarjetas = st.columns(4)
-tarjetas[0].metric("Talentos activos", resumen["total"])
-tarjetas[1].metric("Con potencial alto",
-                   "Sin evaluaciones" if resumen["porcentaje_alto"] is None else f"{resumen['porcentaje_alto']} %")
-tarjetas[2].metric("Evaluaciones del mes", resumen["evaluaciones_mes"])
-tarjetas[3].metric("Talentos sin evaluar", resumen["sin_evaluar"])
+if ver("Indicadores"):
+    tarjetas = st.columns(4)
+    tarjetas[0].metric("Talentos activos", resumen["total"])
+    tarjetas[1].metric("Con potencial alto",
+                       "Sin evaluaciones" if resumen["porcentaje_alto"] is None else f"{resumen['porcentaje_alto']} %")
+    tarjetas[2].metric("Evaluaciones del mes", resumen["evaluaciones_mes"])
+    tarjetas[3].metric("Talentos sin evaluar", resumen["sin_evaluar"])
+    explicar("Indicadores")
+if elegidos == ["Indicadores"]:
+    st.stop()
 
 if analitica.evaluados(filtrado).empty:
     st.info("Aún no hay evaluaciones con IA en este grupo; las gráficas aparecerán después de evaluar talentos.")
     st.stop()
 
-izquierda, derecha = st.columns(2)
-with izquierda:
-    grafica_distribucion(filtrado)
-with derecha:
-    grafica_9box(filtrado)
-detalle(filtrado)
+if ver("Distribución por nivel de potencial") or ver("Matriz 9-box"):
+    izquierda, derecha = lado_a_lado("Distribución por nivel de potencial", "Matriz 9-box")
+    if izquierda:
+        with izquierda:
+            grafica_distribucion(filtrado)
+    if derecha:
+        with derecha:
+            grafica_9box(filtrado)
+    detalle(filtrado)
 
-st.divider()
-izquierda, derecha = st.columns(2)
-with izquierda:
-    st.markdown("**Promedio de puntuación de IA por área**")
-    st.plotly_chart(graficas.promedio_por_area(analitica.promedio_por_area(filtrado)), key="promedios")
-with derecha:
-    st.markdown("**Histograma de puntuaciones de IA**")
-    st.plotly_chart(graficas.histograma(analitica.histograma(filtrado)), key="histograma")
+if ver("Promedio de puntuación por área") or ver("Histograma de puntuaciones"):
+    if ver("Distribución por nivel de potencial") or ver("Matriz 9-box"):
+        st.divider()
+    izquierda, derecha = lado_a_lado("Promedio de puntuación por área", "Histograma de puntuaciones")
+    if izquierda:
+        with izquierda:
+            st.markdown("**Promedio de puntuación de IA por área**")
+            st.plotly_chart(graficas.promedio_por_area(analitica.promedio_por_area(filtrado)), key="promedios")
+            explicar("Promedio de puntuación por área")
+    if derecha:
+        with derecha:
+            st.markdown("**Histograma de puntuaciones de IA**")
+            st.plotly_chart(graficas.histograma(analitica.histograma(filtrado)), key="histograma")
+            explicar("Histograma de puntuaciones")
 
-st.markdown("**Evolución mensual del promedio de puntuación**")
-st.plotly_chart(graficas.evolucion(analitica.evolucion_mensual(filtrado, todas, fechas)), key="evolucion")
+if ver("Evolución mensual"):
+    st.markdown("**Evolución mensual del promedio de puntuación**")
+    st.plotly_chart(graficas.evolucion(analitica.evolucion_mensual(filtrado, todas, fechas)), key="evolucion")
+    explicar("Evolución mensual")
 
-st.markdown("**Comparación entre talentos**")
-evaluados = analitica.evaluados(filtrado)
-por_id = {int(fila["id_talento"]): fila for _, fila in evaluados.iterrows()}
-elegidos = st.multiselect(
-    f"Seleccione hasta {analitica.MAX_RADAR} talentos", list(por_id), max_selections=analitica.MAX_RADAR,
-    placeholder="Seleccione talentos", format_func=lambda id_talento: f"{id_talento} - {por_id[id_talento]['nombre']}")
-if elegidos:
-    st.plotly_chart(graficas.radar([(por_id[id_talento]["nombre"], analitica.valores_radar(por_id[id_talento]))
-                                    for id_talento in elegidos]), key="radar")
+if ver("Comparación entre talentos"):
+    st.markdown("**Comparación entre talentos**")
+    evaluados = analitica.evaluados(filtrado)
+    por_id = {int(fila["id_talento"]): fila for _, fila in evaluados.iterrows()}
+    elegidos = st.multiselect(
+        f"Seleccione hasta {analitica.MAX_RADAR} talentos", list(por_id), max_selections=analitica.MAX_RADAR,
+        placeholder="Seleccione talentos",
+        format_func=lambda id_talento: f"{id_talento} - {por_id[id_talento]['nombre']}")
+    if elegidos:
+        st.plotly_chart(graficas.radar([(por_id[id_talento]["nombre"], analitica.valores_radar(por_id[id_talento]))
+                                        for id_talento in elegidos]), key="radar")
+    explicar("Comparación entre talentos")

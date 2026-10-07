@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import streamlit as st
 
 from backend import auth, errores, seguridad
@@ -6,6 +8,13 @@ from backend import auth, errores, seguridad
 NOMBRE = "TalentOS"
 SIGNIFICADO = "Talent Overview System"
 DESCRIPCION = "Sistema de Identificación de Talento de Alto Potencial"
+
+# Logo (con fondo transparente, recortado de "Logo TalentOS.png") e ícono de la pestaña
+RECURSOS = Path(__file__).resolve().parent.parent / "recursos"
+LOGO = str(RECURSOS / "logo.png")
+ICONO = str(RECURSOS / "icono.png")
+# Avatar genérico para talentos y usuarios sin foto de perfil
+AVATAR = str(RECURSOS / "avatar.png")
 
 
 def pantalla_error(codigo):

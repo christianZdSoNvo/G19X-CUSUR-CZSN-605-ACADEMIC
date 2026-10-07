@@ -42,7 +42,7 @@ def test_respuesta_valida():
     _json(puntuacion_talento_por_ia="85"),
     _json(puntuacion_talento_por_ia=True),
     _json(puntuacion_talento_por_ia=45),  # alto con 45: fuera del rango del nivel
-    _json(reporte_ia="x" * 1001),
+    _json(reporte_ia="x" * (ia.MAX_REPORTE + 1)),
     _json(reporte_ia="   "),
 ])
 def test_respuestas_invalidas(texto):
@@ -74,6 +74,22 @@ def test_prompt_sin_datos_de_contacto():
     assert TALENTO["correo"] not in prompt and TALENTO["tel_mx"] not in prompt
     assert ia.REINTENTO not in prompt
     assert ia.REINTENTO in ia.construir_prompt(TALENTO, reintento=True)
+
+
+def test_prompt_pide_sugerencia_y_largo():
+    # Reporte de alrededor de 1000 caracteres que termina con acciones y proyectos sugeridos
+    prompt = ia.construir_prompt(TALENTO)
+    assert "Termina el reporte con una sugerencia sobre acciones y proyectos" in prompt
+    assert "hasta 1000 caracteres" in prompt and "900" not in prompt
+    assert ia.ESQUEMA["properties"]["reporte_ia"]["maxLength"] == ia.MAX_REPORTE == 1200
+    evaluacion, _ = ia.validar_respuesta(_json(reporte_ia="x" * 1150))
+    assert evaluacion is not None
+
+
+def test_reporte_cortado_por_el_esquema_termina_en_oracion_completa():
+    cortado = ("Oración completa. " * 70)[:ia.MAX_REPORTE - 7] + "a media"
+    evaluacion, _ = ia.validar_respuesta(_json(reporte_ia=cortado))
+    assert evaluacion["reporte_ia"].endswith("completa.") and len(evaluacion["reporte_ia"]) < ia.MAX_REPORTE
 
 
 # --- Flujo completo con MySQL (sin dejar rastro) y el modelo simulado ---
