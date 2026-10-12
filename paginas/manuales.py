@@ -2,8 +2,9 @@ import streamlit as st
 
 from backend import errores, manuales, permisos, sesion, vistas
 
-# Ambos roles consultan; solo el Administrador edita ("editar_manuales"). El Encargado
-# solo ve los manuales de las secciones que tiene en su menú.
+# Ambos roles consultan; solo el Administrador edita ("editar_manuales"). Cada manual
+# va dirigido a un cargo: el Encargado solo ve los suyos; el Administrador ve los suyos
+# y puede consultar, crear y editar también los del Encargado.
 usuario = sesion.usuario_actual()
 permisos.exigir(usuario, "consultar_manuales")
 
@@ -14,11 +15,17 @@ if not permisos.puede(usuario, "editar_manuales"):
     st.stop()
 
 
-def formulario(clave, manual=None):
-    # Devuelve (datos, imágenes nuevas, id_imagen a quitar) si se pulsó "Guardar"; si no, None
+def elegir_cargo(clave, etiqueta):
+    return st.radio(etiqueta, manuales.CARGOS, format_func=permisos.NOMBRES_CARGO.get,
+                    horizontal=True, key=clave)
+
+
+def formulario(clave, cargo, manual=None):
+    # Devuelve (datos, imágenes nuevas, id_imagen a quitar) si se pulsó "Guardar"; si no, None.
+    # Las secciones son las del menú del cargo al que va dirigido el manual.
     manual = manual or {}
     problemas = st.session_state.get(f"problemas_{clave}", {})
-    secciones = list(manuales.SECCIONES)
+    secciones = manuales.secciones_de(cargo)
     with st.form(clave):
         seccion = st.selectbox("Sección del sistema", secciones, placeholder="Seleccione una sección",
                                index=secciones.index(manual["seccion_software"]) if manual else None)
@@ -40,7 +47,8 @@ def formulario(clave, manual=None):
                         quitar.append(imagen["id_imagen"])
         nuevas = st.file_uploader(
             ("Agregar imágenes" if actuales else "Imágenes") + f" (PNG o JPG, máximo 5 MB cada una; hasta "
-            f"{manuales.MAX_IMAGENES} por manual)", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+            f"{manuales.MAX_IMAGENES} por manual)", type=["png", "jpg", "jpeg"], accept_multiple_files=True,
+            max_upload_size=manuales.MAX_IMAGEN_MB)
         st.caption("Se muestran debajo del texto en el orden en que se eligen"
                    + ("; las nuevas van después de las actuales." if actuales else "."))
         if "imagen" in problemas:
@@ -53,7 +61,7 @@ def formulario(clave, manual=None):
         if "contenido_enlace" in problemas:
             st.error(problemas["contenido_enlace"])
         if st.form_submit_button("Guardar", type="primary"):
-            datos = {"seccion_software": seccion, "contenido_texto": texto, "contenido_enlace": enlace}
+            datos = {"dirigido_a": cargo, "seccion_software": seccion, "contenido_texto": texto, "contenido_enlace": enlace}
             return datos, [archivo.getvalue() for archivo in nuevas or []], quitar
     return None
 
@@ -82,19 +90,22 @@ if aviso:
 consultar, nuevo, editar = st.tabs(["Consultar", "Nuevo manual", "Editar o eliminar"])
 
 with consultar:
-    vistas.consulta_manuales(usuario, "manuales")
+    vistas.consulta_manuales(usuario, "manuales", elegir_cargo=True)
 
 with nuevo:
-    clave_nuevo = f"nuevo_manual_{st.session_state.get('version_manuales', 0)}"
-    capturado = formulario(clave_nuevo)
+    # Fuera del formulario, para que la lista de secciones cambie al elegir el cargo
+    cargo_nuevo = elegir_cargo("cargo_nuevo_manual", "Dirigido a")
+    clave_nuevo = f"nuevo_manual_{cargo_nuevo}_{st.session_state.get('version_manuales', 0)}"
+    capturado = formulario(clave_nuevo, cargo_nuevo)
     if capturado:
         datos, imagenes, _ = capturado
         guardar(clave_nuevo, lambda: manuales.crear(usuario, datos, imagenes)[0], "Manual agregado.")
 
 with editar:
-    todos = manuales.listar(usuario)
+    cargo_editar = elegir_cargo("cargo_editar_manual", "Manuales de")
+    todos = manuales.listar(usuario, dirigido_a=cargo_editar)
     if not todos:
-        st.info("No hay manuales registrados.")
+        st.info(f"No hay manuales para el {permisos.NOMBRES_CARGO[cargo_editar]}.")
     else:
         por_id = {manual["id_manual"]: manual for manual in todos}
         id_manual = st.selectbox(
@@ -104,7 +115,7 @@ with editar:
         )
         if id_manual is not None:
             clave = f"editar_manual_{id_manual}_{st.session_state.get('version_manuales', 0)}"
-            capturado = formulario(clave, por_id[id_manual])
+            capturado = formulario(clave, cargo_editar, por_id[id_manual])
             if capturado:
                 datos, imagenes, quitar = capturado
                 guardar(clave, lambda: manuales.editar(usuario, id_manual, datos, imagenes, quitar),

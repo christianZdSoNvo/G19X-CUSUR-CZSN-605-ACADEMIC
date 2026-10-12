@@ -7,6 +7,7 @@ import pytest
 from PIL import Image
 
 from backend import auth, bitacora, db, errores, evaluaciones, manuales, parametros, permisos, vistas
+from backend.permisos import ADMINISTRADOR, ENCARGADO
 
 
 def _png(lado=4):
@@ -99,29 +100,58 @@ def test_validar_imagen():
 
 
 def test_validar_manual():
-    vacio = manuales.limpiar({"seccion_software": "Reportes"})
+    vacio = manuales.limpiar({"dirigido_a": ADMINISTRADOR, "seccion_software": "Reportes"})
     assert set(manuales.validar(vacio, con_imagen=False)) == {"contenido_texto"}
     assert manuales.validar(vacio, con_imagen=True) == {}
     malo = manuales.limpiar({"seccion_software": "Otra", "contenido_texto": "x", "contenido_enlace": "www.x.com"})
-    assert set(manuales.validar(malo, con_imagen=False)) == {"seccion_software", "contenido_enlace"}
+    assert set(manuales.validar(malo, con_imagen=False)) == {"dirigido_a", "seccion_software", "contenido_enlace"}
+    # Un manual del Encargado solo puede ser de una sección de su menú
+    bitacora_encargado = manuales.limpiar({"dirigido_a": ENCARGADO, "seccion_software": "Bitácora",
+                                           "contenido_texto": "x"})
+    assert set(manuales.validar(bitacora_encargado, con_imagen=False)) == {"seccion_software"}
 
 
 def test_secciones_del_encargado(administrador, encargado):
     assert manuales.secciones_permitidas(administrador) == list(manuales.SECCIONES)
     propias = manuales.secciones_permitidas(encargado)
+    assert propias == manuales.secciones_de(ENCARGADO)
     assert not {"Gestión de usuarios", "Parámetros del sistema", "Bitácora"} & set(propias)
     assert {"Inicio de sesión", "Talentos", "Reportes", "Soporte"} <= set(propias)
 
 
+def test_manuales_por_cargo(administrador, encargado):
+    texto = {"seccion_software": "Reportes", "contenido_texto": "Manual pytest por cargo"}
+    _, id_admin = manuales.crear(administrador, {**texto, "dirigido_a": ADMINISTRADOR})
+    _, id_encargado = manuales.crear(administrador, {**texto, "dirigido_a": ENCARGADO})
+    assert json.loads(_bitacora("alta", "Manuales")["detalle"])["dirigido_a"] == ENCARGADO
+
+    def ids(usuario, dirigido_a=None):
+        return {m["id_manual"] for m in manuales.listar(usuario, texto="pytest por cargo", dirigido_a=dirigido_a)}
+
+    # Cada cargo ve solo los suyos; el Administrador puede consultar los del Encargado
+    assert ids(administrador) == {id_admin}
+    assert ids(encargado) == {id_encargado}
+    assert ids(administrador, ENCARGADO) == {id_encargado}
+    with pytest.raises(errores.ErrorSistema) as error:
+        manuales.listar(encargado, dirigido_a=ADMINISTRADOR)
+    assert error.value.codigo == "E-304"
+
+    # Editar conserva el cargo, aunque los datos digan otro
+    assert manuales.editar(administrador, id_encargado, {**texto, "dirigido_a": ADMINISTRADOR,
+                                                         "contenido_texto": "Manual pytest por cargo 2"}) == {}
+    assert ids(encargado) == {id_encargado}
+    assert set(manuales.editar(administrador, id_encargado, {**texto, "seccion_software": "Bitácora"}))         == {"seccion_software"}
+
+
 def test_crear_editar_eliminar(administrador, encargado):
     problemas, id_manual = manuales.crear(administrador, {
-        "seccion_software": "Bitácora", "contenido_texto": "Manual pytest de la bitácora",
+        "dirigido_a": ADMINISTRADOR, "seccion_software": "Bitácora", "contenido_texto": "Manual pytest de la bitácora",
         "contenido_enlace": "https://ejemplo.com/manual"}, [_png(), _png(6)])
     assert problemas == {}
     alta = _bitacora("alta", "Manuales")
     assert alta["id_registro_afectado"] == id_manual and json.loads(alta["detalle"])["imagenes"] == 2
 
-    # El Encargado no ve la sección Bitácora; el Administrador sí
+    # El Encargado no ve los manuales del Administrador
     assert id_manual in [m["id_manual"] for m in manuales.listar(administrador, texto="pytest de la bit")]
     assert id_manual not in [m["id_manual"] for m in manuales.listar(encargado)]
 
@@ -160,7 +190,8 @@ def test_crear_editar_eliminar(administrador, encargado):
 
 def test_imagen_invalida_no_se_guarda(administrador):
     with pytest.raises(errores.ErrorSistema) as error:
-        manuales.crear(administrador, {"seccion_software": "Reportes", "contenido_texto": "x"}, [_png(), b"GIF89a"])
+        manuales.crear(administrador, {"dirigido_a": ADMINISTRADOR, "seccion_software": "Reportes",
+                                       "contenido_texto": "x"}, [_png(), b"GIF89a"])
     assert error.value.codigo == "E-402"
 
 
@@ -224,6 +255,18 @@ def test_pantallas_de_soporte_manuales_y_bitacora(administrador, encargado, app_
     app = app_con_sesion(administrador).run()
     app.switch_page("paginas/bitacora.py").run()
     assert not app.exception and app.title[0].value == "Bitácora"
+
+
+def test_pantalla_de_manuales_por_cargo(administrador, app_con_sesion):
+    # El Administrador cambia entre sus manuales y los del Encargado en las tres pestañas
+    app = app_con_sesion(administrador).run()
+    app.switch_page("paginas/manuales.py").run()
+    for clave in ("cargo_manuales", "cargo_nuevo_manual", "cargo_editar_manual"):
+        app.radio(key=clave).set_value(ENCARGADO).run()
+        assert not app.exception, clave
+    # Con el Encargado elegido, ninguna lista de secciones ofrece las exclusivas del Administrador
+    opciones = [s.options for s in app.selectbox if s.label == "Sección del sistema"]
+    assert opciones and all("Bitácora" not in o for o in opciones)
 
 
 def test_sin_manuales_muestra_e401(administrador, app_con_sesion):

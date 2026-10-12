@@ -167,8 +167,11 @@ CREATE TABLE Eventos_talento (
 ) ENGINE = InnoDB;
 
 -- 9.4 Manuales
+-- dirigido_a: cargo que consulta el manual (mismos valores que Usuarios.cargo);
+-- el Administrador y el Encargado tienen manuales distintos.
 CREATE TABLE Manuales (
     id_manual           INT AUTO_INCREMENT PRIMARY KEY,
+    dirigido_a          ENUM('Administrador RH','Encargado de area') NOT NULL,
     seccion_software    VARCHAR(40),
     contenido_texto     LONGTEXT,
     fecha_actualizacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -176,7 +179,7 @@ CREATE TABLE Manuales (
     contenido_enlace    VARCHAR(255),
     CONSTRAINT fk_manuales_usuario FOREIGN KEY (id_usuario_edito)
         REFERENCES Usuarios (id_usuario),
-    INDEX ix_manuales_seccion (seccion_software)
+    INDEX ix_manuales_cargo_seccion (dirigido_a, seccion_software)
 ) ENGINE = InnoDB;
 
 -- 9.4.1 Imágenes de los manuales (varias por manual, en orden)
@@ -338,38 +341,66 @@ INSERT INTO Configuracion_sistema (clave, valor, descripcion) VALUES
 -- ---------------------------------------------------------------------
 -- 6. Manuales iniciales (PRD, 9.4)
 -- ---------------------------------------------------------------------
-INSERT INTO Manuales (seccion_software, contenido_texto, id_usuario_edito) VALUES
-    ('Inicio de sesión',
+-- 6.1 Manuales del Administrador de RH (todas las secciones)
+INSERT INTO Manuales (dirigido_a, seccion_software, contenido_texto, id_usuario_edito) VALUES
+    ('Administrador RH', 'Inicio de sesión',
      'Escriba su usuario y contraseña y pulse "Iniciar sesión". En el primer inicio de sesión, o después de un restablecimiento, el sistema pide una contraseña nueva de al menos 8 caracteres con una mayúscula, una minúscula y un número. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos. Si olvidó su usuario o contraseña, pulse "¿Olvidaste tu usuario o contraseña?", escriba su correo y el Administrador de RH se pondrá en contacto con usted.',
      @id_admin),
-    ('Talentos',
+    ('Administrador RH', 'Talentos',
      'Busque a un talento por ID o por nombre, o filtre la lista por área. Al seleccionarlo verá sus datos y la pestaña "Evaluación con IA". El Administrador de RH da de alta talentos en "Nuevo talento", los edita, los da de baja con un motivo y los evalúa con el botón "Evaluar" (hay un número limitado de evaluaciones por talento al día). El Encargado de área consulta los talentos de su área y puede solicitar una corrección de datos o una reevaluación con IA.',
      @id_admin),
-    ('Paneles analíticos',
+    ('Administrador RH', 'Paneles analíticos',
      'Muestra los indicadores generales, la distribución por nivel de potencial, la matriz 9-box, el promedio de puntuación por área, el histograma de puntuaciones y la evolución mensual. Use los filtros de la parte superior para acotar los datos. Haga clic en un área o en una celda de la matriz 9-box para ver el detalle hasta llegar al perfil del talento.',
      @id_admin),
-    ('Reportes',
+    ('Administrador RH', 'Reportes',
      'Busque a un talento por ID o por nombre, o selecciónelo en la lista general. Desde su perfil puede exportar el reporte individual en PDF o Excel. El reporte general se genera con los filtros aplicados. Si el archivo no se puede generar, el sistema entrega un archivo de texto con los mismos datos.',
      @id_admin),
-    ('Historial y evolución',
+    ('Administrador RH', 'Historial y evolución',
      'Seleccione a un talento para ver su línea de tiempo: la puntuación de la IA de cada evaluación en el eje vertical y la fecha en el horizontal, junto con sus eventos (promociones, capacitaciones, cambios de clasificación, etc.).',
      @id_admin),
-    ('Notificaciones',
+    ('Administrador RH', 'Notificaciones',
      'En "Bandeja" consulte sus notificaciones y su estado. En "Nueva notificación" elija el tipo, el talento (opcional), el grado de emergencia y escriba el texto. En "Alertas" configure reglas que generan notificaciones automáticas cuando cambian los indicadores de los talentos.',
      @id_admin),
-    ('Configuración',
+    ('Administrador RH', 'Configuración',
      'Cambie su contraseña, el tema claro u oscuro, consulte el contacto de soporte o cierre sesión. El Administrador de RH además gestiona usuarios, parámetros del sistema, manuales y consulta la bitácora.',
      @id_admin),
-    ('Gestión de usuarios',
+    ('Administrador RH', 'Gestión de usuarios',
      'Dé de alta usuarios con su cargo y área; el sistema genera una contraseña temporal que se muestra una sola vez y debe comunicarse en persona. Desde la lista puede editar, desactivar o reactivar usuarios y restablecer su contraseña (también desbloquea la cuenta). En "Solicitudes" aparecen los pedidos de restablecimiento hechos desde el inicio de sesión.',
      @id_admin),
-    ('Parámetros del sistema',
+    ('Administrador RH', 'Parámetros del sistema',
      'Modifique el contacto de soporte, el tiempo máximo y el número de evaluaciones diarias de la IA, la variación por defecto de las alertas, los intentos antes del bloqueo, los minutos de bloqueo y los minutos de inactividad. Pulse "Guardar": los cambios se aplican de inmediato y quedan en la bitácora.',
      @id_admin),
-    ('Bitácora',
+    ('Administrador RH', 'Bitácora',
      'Consulte las acciones registradas en el sistema (inicios de sesión, altas, ediciones, bajas, evaluaciones, exportaciones y cambios de configuración). Filtre por fechas, usuario, acción y tabla. La bitácora no se puede editar ni borrar.',
      @id_admin),
-    ('Soporte',
+    ('Administrador RH', 'Soporte',
+     'En la pestaña "Manuales" elija la sección del sistema o busque por texto. En "Contacto" encontrará los datos de soporte y el botón "Escribir correo"; si apareció un código de error, inclúyalo en el mensaje.',
+     @id_admin);
+
+-- 6.2 Manuales del Encargado de área (solo las secciones de su menú)
+INSERT INTO Manuales (dirigido_a, seccion_software, contenido_texto, id_usuario_edito) VALUES
+    ('Encargado de area', 'Inicio de sesión',
+     'Escriba su usuario y contraseña y pulse "Iniciar sesión". En el primer inicio de sesión, o después de un restablecimiento, el sistema pide una contraseña nueva de al menos 8 caracteres con una mayúscula, una minúscula y un número. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos. Si olvidó su usuario o contraseña, pulse "¿Olvidaste tu usuario o contraseña?", escriba su correo y el Administrador de RH se pondrá en contacto con usted.',
+     @id_admin),
+    ('Encargado de area', 'Talentos',
+     'Consulte los talentos de su área: búsquelos por ID o por nombre. Al seleccionar uno verá sus datos y su última evaluación con IA. Si un dato es incorrecto, pulse "Solicitar corrección de datos"; si necesita una evaluación más reciente, pulse "Solicitar reevaluación con IA". Ambas solicitudes llegan al Administrador de RH como notificación.',
+     @id_admin),
+    ('Encargado de area', 'Paneles analíticos',
+     'Muestra los indicadores de los talentos de su área: distribución por nivel de potencial, matriz 9-box, histograma de puntuaciones y evolución mensual. En la barra lateral elija qué paneles mostrar. Haga clic en un nivel o en una celda de la matriz 9-box para ver el detalle hasta llegar al perfil del talento.',
+     @id_admin),
+    ('Encargado de area', 'Reportes',
+     'Busque a un talento de su área por ID o por nombre, o selecciónelo en la lista. Puede exportar su reporte individual en PDF o Excel, o el reporte general de su área con los filtros aplicados. Si el archivo no se puede generar, el sistema entrega un archivo de texto con los mismos datos.',
+     @id_admin),
+    ('Encargado de area', 'Historial y evolución',
+     'Seleccione a un talento de su área para ver su línea de tiempo: la puntuación de la IA de cada evaluación en el eje vertical y la fecha en el horizontal, junto con sus eventos (promociones, capacitaciones, cambios de clasificación, etc.).',
+     @id_admin),
+    ('Encargado de area', 'Notificaciones',
+     'En "Bandeja" consulte las notificaciones recibidas y enviadas. En "Nueva notificación" escriba al Administrador de RH: elija el tipo, el talento de su área (opcional), el grado de emergencia y el texto. En "Alertas" configure reglas que le avisan cuando cambian los indicadores de los talentos de su área.',
+     @id_admin),
+    ('Encargado de area', 'Configuración',
+     'Cambie su contraseña y su foto de perfil, elija el tema claro u oscuro, consulte el contacto de soporte o cierre sesión.',
+     @id_admin),
+    ('Encargado de area', 'Soporte',
      'En la pestaña "Manuales" elija la sección del sistema o busque por texto. En "Contacto" encontrará los datos de soporte y el botón "Escribir correo"; si apareció un código de error, inclúyalo en el mensaje.',
      @id_admin);
 
@@ -406,7 +437,7 @@ SET @id_admin = NULL;
 SHOW TABLES;
 SELECT id_usuario, cargo, usuario, debe_cambiar_contrasena FROM Usuarios;
 SELECT clave, valor FROM Configuracion_sistema;
-SELECT id_manual, seccion_software FROM Manuales;
+SELECT id_manual, dirigido_a, seccion_software FROM Manuales;
 SHOW GRANTS FOR 'app_talentos'@'localhost';
 
 -- Después de ejecutar el script, en el .env:

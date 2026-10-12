@@ -3,7 +3,7 @@ from urllib.parse import quote
 import pandas as pd
 import streamlit as st
 
-from backend import analitica, errores, graficas, manuales, parametros
+from backend import analitica, errores, graficas, manuales, parametros, permisos
 from backend.interfaz import AVATAR, NOMBRE
 
 # Vistas compartidas entre páginas: historial (su página y el drill-down de paneles),
@@ -35,7 +35,7 @@ def editor_foto(clave, actual, cambiar):
     # texto del aviso si hubo cambio. E-402 se muestra aquí mismo.
     version = st.session_state.get(f"{clave}_version", 0)
     archivo = st.file_uploader("Foto de perfil (PNG o JPG, máximo 5 MB)", type=["png", "jpg", "jpeg"],
-                               key=f"{clave}_archivo_{version}")
+                               max_upload_size=manuales.MAX_IMAGEN_MB, key=f"{clave}_archivo_{version}")
     guardar, quitar = st.columns(2)
     try:
         if guardar.button("Guardar foto", type="primary", disabled=archivo is None, width="stretch",
@@ -124,19 +124,28 @@ def contacto_soporte(clave):
                       help="El Administrador de RH aún no define el correo de soporte.")
 
 
-def consulta_manuales(usuario, clave):
-    # Lista filtrable por sección y texto (PRD, 13.6); E-401 si no hay manuales
-    if not manuales.hay_manuales(usuario):
+def consulta_manuales(usuario, clave, elegir_cargo=False):
+    # Lista filtrable por sección y texto (PRD, 13.6); E-401 si no hay manuales.
+    # Por omisión, los manuales del cargo del usuario; con elegir_cargo (Administrador,
+    # página Manuales) puede consultar también los del Encargado.
+    cargo = usuario["cargo"]
+    if elegir_cargo:
+        cargo = st.radio("Manuales de", manuales.CARGOS, format_func=permisos.NOMBRES_CARGO.get,
+                         horizontal=True, key=f"cargo_{clave}")
+    if not manuales.hay_manuales(usuario, cargo):
+        if cargo != usuario["cargo"]:
+            st.info(f"No hay manuales para el {permisos.NOMBRES_CARGO[cargo]}.")
+            return
         correo = parametros.contacto_soporte()["correo"]
         st.warning(errores.CATALOGO["E-401"].format(correo_soporte=correo))
         st.caption("Código de error: E-401")
         contacto_soporte(f"{clave}_sin_manuales")
         return
     izquierda, derecha = st.columns(2)
-    seccion = izquierda.selectbox("Sección del sistema", manuales.secciones_permitidas(usuario), index=None,
-                                  placeholder="Todas las secciones", key=f"seccion_{clave}")
+    seccion = izquierda.selectbox("Sección del sistema", manuales.secciones_de(cargo), index=None,
+                                  placeholder="Todas las secciones", key=f"seccion_{clave}_{cargo}")
     texto = derecha.text_input("Buscar en los manuales", key=f"buscar_{clave}")
-    encontrados = manuales.listar(usuario, seccion, texto)
+    encontrados = manuales.listar(usuario, seccion, texto, cargo)
     if not encontrados:
         st.info("No hay manuales que coincidan con la búsqueda.")
     for manual in encontrados:
