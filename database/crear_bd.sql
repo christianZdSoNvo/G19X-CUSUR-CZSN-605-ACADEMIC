@@ -443,3 +443,8 @@ SHOW GRANTS FOR 'app_talentos'@'localhost';
 -- Después de ejecutar el script, en el .env:
 --   DB_USER=app_talentos
 --   DB_PASSWORD=<la contraseña de @contrasena_app>
+--
+-- Para cargar los registros actuales (usuarios, talentos, evaluaciones,
+-- manuales, etc.), ejecutar después database\datos_actuales.sql con root.
+-- En ese caso el Administrador inicial de la sección 4 se reemplaza por
+-- los usuarios del archivo.

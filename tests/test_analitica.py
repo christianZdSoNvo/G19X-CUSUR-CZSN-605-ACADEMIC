@@ -144,6 +144,25 @@ def test_pagina_de_paneles(administrador, evaluado, app_con_sesion):
     assert evaluado in app.dataframe[0].value["ID"].tolist()
 
 
+def test_limpiar_filtros_de_paneles(administrador, evaluado, app_con_sesion):
+    app = app_con_sesion(administrador).run()
+    app.switch_page("paginas/paneles.py").run()
+    app.selectbox(key="filtro_area_0").set_value(TALENTO["area"])
+    app.multiselect(key="filtro_niveles_0").set_value(["alto"])
+    app.slider(key="filtro_puntuacion_0").set_value((50, 90))
+    app.run()
+    assert not app.exception
+
+    next(boton for boton in app.button if boton.label == "Limpiar filtros").click().run()
+    assert not app.exception
+    # Los filtros se dibujan con claves nuevas y vuelven a sus valores predeterminados
+    assert app.selectbox(key="filtro_area_1").value is None
+    assert app.multiselect(key="filtro_niveles_1").value == []
+    assert app.multiselect(key="filtro_9box_1").value == []
+    assert app.slider(key="filtro_puntuacion_1").value == (0, 100)
+    assert "filtro_area_0" not in app.session_state
+
+
 def test_pagina_de_historial(administrador, evaluado, app_con_sesion):
     app = app_con_sesion(administrador).run()
     app.session_state["historial_talento"] = evaluado

@@ -11,6 +11,12 @@ st.set_page_config(layout="wide")
 
 FILTROS = ("filtro_area", "filtro_niveles", "filtro_9box", "filtro_fechas", "filtro_puntuacion", "filtro_antiguedad")
 
+
+# "Limpiar filtros" cambia la versión de las claves: borrar los valores de session_state no
+# basta, porque el navegador vuelve a enviar el valor que tenía cada filtro.
+def filtro(nombre):
+    return f"{nombre}_{st.session_state.get('filtros_version', 0)}"
+
 # Paneles elegidos en el menú (app.py los pone debajo de "Paneles analíticos"); sin elegir
 # ninguno se muestran todos
 elegidos = st.session_state.get(menu.CLAVE_PANELES) or list(menu.PANELES)
@@ -174,19 +180,22 @@ with st.container(border=True):
         area = area_fija
     else:
         area = fila1[0].selectbox("Área", catalogos.AREAS, index=None, placeholder="Todas las áreas",
-                                  key="filtro_area")
+                                  key=filtro("filtro_area"))
     niveles = fila1[1].multiselect("Nivel de potencial", analitica.NIVELES, format_func=nombre_nivel,
-                                   placeholder="Todos", key="filtro_niveles")
+                                   placeholder="Todos", key=filtro("filtro_niveles"))
     clasificaciones = fila1[2].multiselect("Clasificación 9-box", analitica.CLASIFICACIONES, placeholder="Todas",
-                                           key="filtro_9box")
+                                           key=filtro("filtro_9box"))
     fila2 = st.columns(3)
-    fechas = fila2[0].date_input("Fechas de evaluación", value=(), format="DD/MM/YYYY", key="filtro_fechas")
-    puntuacion = fila2[1].slider("Puntuación de IA", 0, 100, (0, 100), key="filtro_puntuacion")
+    fechas = fila2[0].date_input("Fechas de evaluación", value=(), format="DD/MM/YYYY",
+                                 key=filtro("filtro_fechas"))
+    puntuacion = fila2[1].slider("Puntuación de IA", 0, 100, (0, 100), key=filtro("filtro_puntuacion"))
     maximo_anios = max(1, math.ceil(datos["fecha_ingreso"].map(analitica.antiguedad_anios).max()))
-    antiguedad = fila2[2].slider("Antigüedad (años)", 0, maximo_anios, (0, maximo_anios), key="filtro_antiguedad")
+    antiguedad = fila2[2].slider("Antigüedad (años)", 0, maximo_anios, (0, maximo_anios),
+                                 key=filtro("filtro_antiguedad"))
     if st.button("Limpiar filtros"):
-        for filtro in FILTROS:
-            st.session_state.pop(filtro, None)
+        for nombre in FILTROS:
+            st.session_state.pop(filtro(nombre), None)
+        st.session_state["filtros_version"] = st.session_state.get("filtros_version", 0) + 1
         seleccionar({})
 
 # Solo se aplican los filtros que el usuario cambió
