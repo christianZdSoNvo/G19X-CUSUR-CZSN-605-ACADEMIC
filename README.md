@@ -98,6 +98,17 @@ El sistema abre en el navegador en `http://localhost:8501`. Solo se puede usar d
 
 En el primer inicio de sesión con el Administrador de `crear_bd.sql`, el sistema pide cambiar la contraseña temporal. La primera evaluación con IA puede tardar más, porque el modelo se carga en memoria (el sistema lo precarga al iniciar sesión).
 
+## Usuarios de prueba
+
+Para validar el sistema, al cargar `database/datos_actuales.sql` quedan disponibles estos usuarios, uno de cada cargo:
+
+| Usuario | Contraseña | Cargo | Área |
+|---|---|---|---|
+| `AdminRH` | `Admin123` | Administrador de RH | Recursos Humanos (acceso a todas las áreas) |
+| `PruebaE` | `Prueba123` | Encargado de área | Finanzas |
+
+Son cuentas solo para pruebas: en una instalación real conviene cambiar sus contraseñas desde **Configuración** o desactivarlas en **Gestión de usuarios**. Si solo se ejecuta `crear_bd.sql`, estos usuarios no existen y se entra con el Administrador inicial definido en ese script.
+
 ## Scripts de apoyo
 
 | Script | Uso |
