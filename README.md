@@ -86,6 +86,16 @@ OLLAMA_MODEL=llama3:8b
 
 El archivo `.env` nunca se sube al repositorio.
 
+### 5. Contraseña del Administrador inicial
+
+`crear_bd.sql` crea al Administrador sin contraseña (MySQL no puede calcular PBKDF2). Con el `.env` listo, se le asigna una temporal:
+
+```
+.venv\Scripts\python.exe reset_admin.py
+```
+
+El script muestra la contraseña temporal una sola vez; el sistema pide cambiarla en el primer inicio de sesión. Si se cargó `datos_actuales.sql`, este paso no hace falta.
+
 ## Ejecución
 
 Con MySQL y Ollama en marcha:
@@ -96,7 +106,7 @@ Con MySQL y Ollama en marcha:
 
 El sistema abre en el navegador en `http://localhost:8501`. Solo se puede usar desde el mismo equipo.
 
-En el primer inicio de sesión con el Administrador de `crear_bd.sql`, el sistema pide cambiar la contraseña temporal. La primera evaluación con IA puede tardar más, porque el modelo se carga en memoria (el sistema lo precarga al iniciar sesión).
+En el primer inicio de sesión con el Administrador inicial, el sistema pide cambiar la contraseña temporal que dio `reset_admin.py`. La primera evaluación con IA puede tardar más, porque el modelo se carga en memoria (el sistema lo precarga al iniciar sesión).
 
 ## Usuarios de prueba
 
@@ -113,7 +123,7 @@ Son cuentas solo para pruebas: en una instalación real conviene cambiar sus con
 
 | Script | Uso |
 |---|---|
-| `reset_admin.py` | Restablece la contraseña de un Administrador desde el equipo: `.venv\Scripts\python.exe reset_admin.py [--usuario X]` |
+| `reset_admin.py` | Asigna la primera contraseña del Administrador inicial o restablece la de un Administrador desde el equipo: `.venv\Scripts\python.exe reset_admin.py [--usuario X]` |
 | `datos_ejemplo.py` | Genera talentos y evaluaciones de ejemplo: `vista` (Excel sin tocar la base), `cargar` o `borrar` |
 | `exportar_datos.py` | Vuelve a generar `database/datos_actuales.sql` con los registros actuales de la base |
 

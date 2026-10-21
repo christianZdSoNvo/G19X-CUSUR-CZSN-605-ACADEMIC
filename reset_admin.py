@@ -5,20 +5,22 @@ Uso (en la carpeta del proyecto):
     .venv\\Scripts\\python.exe reset_admin.py --usuario <usuario>
 
 Genera una contraseña temporal, desbloquea la cuenta, obliga a cambiarla en el
-siguiente inicio de sesión y deja el registro en la bitácora.
+siguiente inicio de sesión y deja el registro en la bitácora. También asigna la
+primera contraseña del Administrador inicial que crea database/crear_bd.sql.
 """
 
 import argparse
 import sys
 
-from backend import db, errores, permisos, usuarios
+from backend import db, errores, permisos, seguridad, usuarios
 
 
 def administradores_activos():
     with db.transaccion() as cursor:
         cursor.execute(
-            "SELECT id_usuario, nombre, usuario FROM Usuarios WHERE cargo = %s AND activo ORDER BY usuario",
-            (permisos.ADMINISTRADOR,),
+            "SELECT id_usuario, nombre, usuario, contrasena = %s AS pendiente "
+            "FROM Usuarios WHERE cargo = %s AND activo ORDER BY usuario",
+            (seguridad.PENDIENTE, permisos.ADMINISTRADOR),
         )
         return cursor.fetchall()
 
@@ -49,7 +51,8 @@ def main():
             print(problema)
             return 1
 
-        print(f"Se restablecerá la contraseña de {administrador['nombre']} "
+        accion = "asignará la primera" if administrador["pendiente"] else "restablecerá la"
+        print(f"Se {accion} contraseña de {administrador['nombre']} "
               f"(usuario: {administrador['usuario']}).")
         if input("¿Continuar? (s/n): ").strip().lower() != "s":
             print("Cancelado; no se hizo ningún cambio.")

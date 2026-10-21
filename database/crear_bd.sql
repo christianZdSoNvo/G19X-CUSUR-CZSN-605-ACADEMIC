@@ -9,7 +9,8 @@
 --   2. Crea las 10 tablas del modelo de datos.
 --   3. Crea el usuario de MySQL de la aplicación con privilegios mínimos.
 --   4. Carga las claves iniciales de Configuracion_sistema.
---   5. Crea el Administrador de RH inicial.
+--   5. Crea el Administrador de RH inicial (sin contraseña: se le asigna
+--      después con reset_admin.py).
 --   6. Carga los manuales iniciales.
 --   7. (Opcional) Cifrado de tablespaces y SSL obligatorio.
 --
@@ -24,9 +25,15 @@
 --   se escriben solo al ejecutarlo y se deshacen antes de un commit.
 --
 -- CONTRASEÑAS DE LOS USUARIOS DEL SISTEMA
---   contrasena = SHA2(CONCAT(salt, contraseña), 256)  -> 64 caracteres hex
+--   contrasena = "pbkdf2_sha256$<iteraciones>$<hash base64>" (PBKDF2-SHA256)
 --   salt       = 16 caracteres hexadecimales aleatorios
---   En Python:  hashlib.sha256((salt + contrasena).encode("utf-8")).hexdigest()
+--   Las calcula el sistema en Python (backend/seguridad.py); MySQL no tiene
+--   PBKDF2, por eso este script no guarda ninguna contraseña de usuario.
+--
+-- DESPUÉS DE EJECUTARLO
+--   En la carpeta del proyecto:  .venv\Scripts\python.exe reset_admin.py
+--   Asigna la contraseña temporal del Administrador inicial; se cambia en el
+--   primer inicio de sesión.
 -- =====================================================================
 
 
@@ -37,14 +44,11 @@
 SET @contrasena_app = 'CAMBIAR_contrasena_app';
 
 -- Datos del Administrador de RH inicial.
--- La contraseña es temporal: el sistema obliga a cambiarla en el primer
--- inicio de sesión. Debe cumplir la política (8 caracteres, mayúscula,
--- minúscula y número).
-SET @admin_nombre     = 'CAMBIAR nombre del administrador';
-SET @admin_usuario    = 'admin';
-SET @admin_correo     = 'CAMBIAR@correo.com';
-SET @admin_tel        = '0000000000';
-SET @admin_contrasena = 'CAMBIAR_Temporal1';
+-- Su contraseña no va aquí: se asigna con reset_admin.py al terminar.
+SET @admin_nombre  = 'CAMBIAR nombre del administrador';
+SET @admin_usuario = 'admin';
+SET @admin_correo  = 'CAMBIAR@correo.com';
+SET @admin_tel     = '0000000000';
 
 
 -- ---------------------------------------------------------------------
@@ -303,17 +307,18 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON proyecto_talentos.Configuracion_sistema 
 -- ---------------------------------------------------------------------
 -- 4. Administrador de RH inicial
 -- ---------------------------------------------------------------------
+-- Se crea con contrasena = 'pendiente', que no coincide con ninguna
+-- contraseña: nadie puede entrar con esta cuenta hasta ejecutar
+-- reset_admin.py. Sus datos y su ID ya sirven para los manuales iniciales.
 SET @salt = LOWER(HEX(RANDOM_BYTES(8)));
 
 INSERT INTO Usuarios (cargo, area, nombre, usuario, correo, contrasena, salt,
                       fecha_cambio_contrasena, debe_cambiar_contrasena, tel_mx)
 VALUES ('Administrador RH', 'Recursos Humanos', @admin_nombre, @admin_usuario,
-        @admin_correo, SHA2(CONCAT(@salt, @admin_contrasena), 256), @salt,
-        CURDATE(), TRUE, @admin_tel);
+        @admin_correo, 'pendiente', @salt, CURDATE(), TRUE, @admin_tel);
 
 SET @id_admin = LAST_INSERT_ID();
 SET @salt = NULL;
-SET @admin_contrasena = NULL;
 SET @contrasena_app = NULL;
 
 INSERT INTO Bitacora (id_usuario, accion, tabla_afectada, id_registro_afectado, detalle)
@@ -443,6 +448,9 @@ SHOW GRANTS FOR 'app_talentos'@'localhost';
 -- Después de ejecutar el script, en el .env:
 --   DB_USER=app_talentos
 --   DB_PASSWORD=<la contraseña de @contrasena_app>
+--
+-- Y en la carpeta del proyecto, para la contraseña temporal del Administrador:
+--   .venv\Scripts\python.exe reset_admin.py
 --
 -- Para cargar los registros actuales (usuarios, talentos, evaluaciones,
 -- manuales, etc.), ejecutar después database\datos_actuales.sql con root.

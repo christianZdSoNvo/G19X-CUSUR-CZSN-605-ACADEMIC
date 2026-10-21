@@ -50,7 +50,14 @@ def _validar_acceso(cursor, fila, usuario, contrasena, parametros):
         "UPDATE Usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id_usuario = %s",
         (id_usuario,),
     )
-    bitacora.registrar(cursor, id_usuario, "inicio_sesion", "Usuarios", id_usuario)
+    detalle = None
+    if seguridad.necesita_actualizar(fila["contrasena"]):
+        # Contraseña guardada con el formato anterior: se vuelve a guardar con PBKDF2
+        salt = seguridad.generar_salt()
+        cursor.execute("UPDATE Usuarios SET contrasena = %s, salt = %s WHERE id_usuario = %s",
+                       (seguridad.hashear(contrasena, salt), salt, id_usuario))
+        detalle = {"contrasena": "actualizada a PBKDF2"}
+    bitacora.registrar(cursor, id_usuario, "inicio_sesion", "Usuarios", id_usuario, detalle)
     return None
 
 
