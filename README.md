@@ -63,11 +63,11 @@ python -m venv .venv
    mysql -u root -p < database\crear_bd.sql
    ```
    Crea la base de datos, las 10 tablas, el usuario de MySQL `app_talentos` con privilegios mínimos, la configuración inicial, el Administrador inicial y los manuales.
-2. **(Opcional) Cargar los registros actuales** (usuarios, talentos, evaluaciones, manuales con imágenes, notificaciones, alertas y bitácora):
+2. **(Opcional) Cargar los datos de prueba** (los dos usuarios de prueba, 60 talentos ficticios con sus evaluaciones, manuales con imágenes, notificaciones, alertas y bitácora):
    ```
    mysql -u root -p < database\datos_actuales.sql
    ```
-   Reemplaza al Administrador inicial por los usuarios del archivo, que conservan sus contraseñas. En MySQL Workbench conviene usar **File > Run SQL Script**, porque el archivo es grande.
+   Reemplaza al Administrador inicial por los [usuarios de prueba](#usuarios-de-prueba). No contiene datos de personas reales. En MySQL Workbench conviene usar **File > Run SQL Script**, porque el archivo es grande.
 
 Los scripts `actualizar_*.sql` solo sirven para actualizar una base instalada con una versión anterior; en una instalación nueva no se ejecutan.
 
@@ -112,12 +112,12 @@ En el primer inicio de sesión con el Administrador inicial, el sistema pide cam
 
 Para validar el sistema, al cargar `database/datos_actuales.sql` quedan disponibles estos usuarios, uno de cada cargo:
 
-| Usuario | Contraseña | Cargo | Área |
+| Usuario | Contraseña inicial | Cargo | Área |
 |---|---|---|---|
 | `AdminRH` | `Admin123` | Administrador de RH | Recursos Humanos (acceso a todas las áreas) |
 | `PruebaE` | `Prueba123` | Encargado de área | Finanzas |
 
-Son cuentas solo para pruebas: en una instalación real conviene cambiar sus contraseñas desde **Configuración** o desactivarlas en **Gestión de usuarios**. Si solo se ejecuta `crear_bd.sql`, estos usuarios no existen y se entra con el Administrador inicial definido en ese script.
+En el primer inicio de sesión, el sistema pide cambiar la contraseña. Son cuentas solo para pruebas: en una instalación real conviene desactivarlas en **Gestión de usuarios**. Si solo se ejecuta `crear_bd.sql`, estos usuarios no existen y se entra con el Administrador inicial (ver el paso 5 de la instalación).
 
 ## Scripts de apoyo
 
@@ -125,7 +125,7 @@ Son cuentas solo para pruebas: en una instalación real conviene cambiar sus con
 |---|---|
 | `reset_admin.py` | Asigna la primera contraseña del Administrador inicial o restablece la de un Administrador desde el equipo: `.venv\Scripts\python.exe reset_admin.py [--usuario X]` |
 | `datos_ejemplo.py` | Genera talentos y evaluaciones de ejemplo: `vista` (Excel sin tocar la base), `cargar` o `borrar` |
-| `exportar_datos.py` | Vuelve a generar `database/datos_actuales.sql` con los registros actuales de la base |
+| `exportar_datos.py` | Vuelve a generar `database/datos_actuales.sql` a partir de la base, solo con datos de prueba: quita los usuarios que no son de prueba, los talentos que no son de `datos_ejemplo.py` y todo lo que los mencione |
 
 ## Pruebas
 
