@@ -36,6 +36,37 @@ Autor: Christian Zaid Solano Navarro.
 
 16 GB de RAM, procesador de 4 núcleos o más y, de preferencia, una tarjeta de video con al menos 4 GB. El modelo de IA ocupa cerca de 5 GB en disco.
 
+### Equipos con menos recursos
+
+En un equipo sin tarjeta de video o con menos de 16 GB de RAM se puede usar **llama3.2:3b** (cerca de 2 GB en disco):
+
+```
+ollama pull llama3.2:3b
+```
+
+y en el `.env` poner `OLLAMA_MODEL=llama3.2:3b`. No hay que cambiar nada más: el sistema usa el mismo prompt y la misma validación.
+
+Se comparó con llama3:8b evaluando los mismos 10 talentos de prueba en el equipo de desarrollo:
+
+| | llama3.2:3b | llama3:8b |
+|---|---|---|
+| Respuestas válidas al primer intento | 9 de 10 | 10 de 10 |
+| Respuestas válidas con reintentos | 10 de 10 | 10 de 10 |
+| Tiempo por evaluación | 8 a 14 s | 52 a 80 s |
+| Mismo nivel de potencial que llama3:8b | 10 de 10 | — |
+| Mismo nivel por criterio que llama3:8b | 34 de 60 | — |
+
+Es más rápido y da el mismo nivel de potencial, pero sus niveles por criterio son menos precisos, por lo que llama3:8b sigue siendo el modelo recomendado. En un equipo sin tarjeta de video las evaluaciones tardan más; si pasan del tiempo máximo (90 s por omisión), se puede subir en **Parámetros del sistema**.
+
+**Si Ollama no está instalado o no está en marcha**, el resto del sistema funciona con normalidad (talentos, paneles, historial, reportes, notificaciones y configuración); solo la evaluación con IA muestra un error:
+
+| Código | Cuándo aparece | Qué hacer |
+|---|---|---|
+| E-101 | Ollama no responde o el modelo de `OLLAMA_MODEL` no está descargado. No gasta intento. | Iniciar Ollama o descargar el modelo con `ollama pull` y volver a evaluar. |
+| E-102 | El modelo tardó más que el tiempo máximo. Gasta un intento. | Volver a intentar o subir el tiempo máximo en **Parámetros del sistema**. |
+| E-103 | El modelo no devolvió una evaluación válida en ninguno de los intentos disponibles. | Intentar más tarde o al día siguiente. |
+| E-104 | El talento ya usó todas sus evaluaciones del día (3 por omisión). | Esperar al día siguiente o cambiar el límite en **Parámetros del sistema**. |
+
 ## Instalación
 
 ### 1. Programas necesarios
@@ -108,6 +139,20 @@ El sistema abre en el navegador en `http://localhost:8501`. Solo se puede usar d
 
 En el primer inicio de sesión con el Administrador inicial, el sistema pide cambiar la contraseña temporal que dio `reset_admin.py`. La primera evaluación con IA puede tardar más, porque el modelo se carga en memoria (el sistema lo precarga al iniciar sesión).
 
+## Alertas y notificaciones
+
+Todas las notificaciones son **dentro del sistema**: aparecen en **Notificaciones y alertas** y en **Inicio**, con el número de pendientes junto al nombre de la sección en el menú. **El sistema no envía correos**: nadie recibe un aviso por correo electrónico.
+
+Las alertas automáticas se configuran en **Notificaciones y alertas > Alertas** (el botón "Crear las alertas sugeridas" crea las cuatro reglas básicas) y se revisan en estos momentos:
+
+| Regla | Cuándo se revisa |
+|---|---|
+| Cambio de la puntuación de IA o del nivel de potencial | Al guardar una nueva evaluación con IA del talento (se compara con la anterior) |
+| Baja del desempeño previo | Al guardar la edición del talento |
+| Días sin evaluar | Al iniciar sesión cualquier usuario (`alertas.revisar_sin_evaluar`); Streamlit no tiene tareas programadas, así que no se revisa mientras nadie entra al sistema |
+
+Las reglas no son retroactivas: solo avisan de los cambios que ocurren después de crearlas. Un talento genera una sola alerta de "días sin evaluar" por regla hasta que se vuelve a evaluar.
+
 ## Usuarios de prueba
 
 Para validar el sistema, al cargar `database/datos_actuales.sql` quedan disponibles estos usuarios, uno de cada cargo:
@@ -160,6 +205,10 @@ Cuando ocurre un error, el sistema muestra un mensaje con un código copiable pa
 | E-201 / E-202 | No se pudo generar el PDF o el Excel (se entrega un archivo de texto) |
 | E-301 a E-304 | Credenciales incorrectas, cuenta bloqueada, sesión expirada o sin permiso |
 | E-401 / E-402 | Sin manuales disponibles / imagen no válida (PNG o JPG de máximo 5 MB) |
+
+## IA usada en el desarrollo
+
+Se usó Claude Code (Anthropic) como asistente para escribir y comprobar código y pruebas; por eso aparece como coautor en los commits. El diseño, la documentación, las decisiones y las pruebas en el sistema las hizo el autor.
 
 ## Documentación
 
