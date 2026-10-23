@@ -1,11 +1,16 @@
-"""Exporta los registros de la base de datos a database/datos_actuales.sql, sin datos personales.
+"""Exporta los registros de la base de datos sin datos personales, en dos scripts:
+
+- database/datos_actuales.sql: todo menos los manuales. Se ejecuta con root DESPUÉS de
+  crear_bd.sql: borra los registros iniciales (Administrador, configuración y bitácora
+  de la instalación) y carga los exportados con los mismos IDs. Los manuales de texto
+  de crear_bd.sql se conservan y quedan a nombre del Administrador de prueba.
+- database/imagenes_manuales.sql (opcional): los manuales con sus imágenes y su
+  bitácora. Se ejecuta después de datos_actuales.sql y reemplaza los de crear_bd.sql.
 
 Uso (en la carpeta del proyecto):
     .venv\\Scripts\\python.exe exportar_datos.py
 
-El script generado se ejecuta con root DESPUÉS de crear_bd.sql: borra los registros
-iniciales (Administrador, configuración, manuales y bitácora de la instalación) y carga
-los exportados con los mismos IDs. Los intentos fallidos y los bloqueos se reinician.
+Los intentos fallidos y los bloqueos se reinician.
 
 Solo se exportan datos de prueba (la base de desarrollo no se modifica):
 - Usuarios: solo las cuentas de CUENTAS_DE_PRUEBA, sin foto y con cambio obligatorio
@@ -26,6 +31,7 @@ from pathlib import Path
 from backend import db, permisos
 
 ARCHIVO = Path(__file__).parent / "database" / "datos_actuales.sql"
+ARCHIVO_MANUALES = Path(__file__).parent / "database" / "imagenes_manuales.sql"
 
 # Usuario -> datos que se reemplazan en la exportación
 CUENTAS_DE_PRUEBA = {
@@ -43,6 +49,9 @@ LLAVES = {"Usuarios": "id_usuario", "Talentos": "id_talento", "Evaluaciones": "i
           "Eventos_talento": "id_evento", "Manuales": "id_manual", "Manual_imagenes": "id_imagen",
           "Notificaciones": "id_noti", "Bitacora": "id_bitacora", "Alertas_config": "id_alerta",
           "Configuracion_sistema": "id_config"}
+# Van en imagenes_manuales.sql (casi todo el peso del volcado son sus imágenes)
+MANUALES = ("Manuales", "Manual_imagenes")
+TABLAS_DATOS = tuple(t for t in TABLAS if t not in MANUALES)
 # Filas por INSERT; las tablas con imágenes van de una en una para no hacer sentencias enormes
 FILAS_POR_INSERT = 50
 CON_IMAGENES = ("Usuarios", "Talentos", "Manual_imagenes")
@@ -199,58 +208,108 @@ def inserts(tabla, columnas, registros):
         yield f"{encabezado}\n{valores};"
 
 
-def generar():
-    partes = [
+def _encabezado(titulo, ejecucion, descripcion):
+    return [
         "-- =====================================================================",
-        "-- TalentOS: registros actuales de la base de datos",
+        f"-- TalentOS: {titulo}",
         f"-- Generado con exportar_datos.py el {datetime.datetime.now():%d/%m/%Y %H:%M}",
         "-- =====================================================================",
         "--",
         "-- CÓMO SE EJECUTA",
-        "--   1. Ejecutar primero database/crear_bd.sql (crea la base, las tablas y",
-        "--      el usuario de MySQL app_talentos).",
-        "--   2. Ejecutar este archivo con root:",
-        "--        mysql -u root -p < database\\datos_actuales.sql",
+        *ejecucion,
         "--      o abrirlo en MySQL Workbench y ejecutar todo (rayo).",
         "--",
-        "-- Borra los registros iniciales de crear_bd.sql (Administrador, configuración,",
-        "-- manuales y bitácora de la instalación) y carga los de prueba con sus mismos",
-        "-- IDs. Solo datos ficticios: las cuentas de prueba del README (con cambio",
-        "-- obligatorio de contraseña) y los talentos generados con datos_ejemplo.py.",
+        *descripcion,
         "-- =====================================================================",
         "",
         "SET NAMES utf8mb4;",
         "USE proyecto_talentos;",
-        "SET FOREIGN_KEY_CHECKS = 0;",
-        "START TRANSACTION;",
-        "",
     ]
-    partes += [f"DELETE FROM {tabla};" for tabla in reversed(TABLAS)]
+
+
+def _cargas(tablas, columnas, datos):
+    partes = []
+    for tabla in tablas:
+        partes += ["", f"-- {tabla} ({len(datos[tabla])} registros)"]
+        partes += list(inserts(tabla, columnas[tabla], datos[tabla]))
+    return partes
+
+
+def _verificacion(tablas):
+    return ["", "-- Verificación"] + [
+        f"SELECT '{tabla}' AS tabla, COUNT(*) AS registros FROM {tabla}"
+        + (";" if i == len(tablas) - 1 else " UNION ALL") for i, tabla in enumerate(tablas)]
+
+
+def scripts(columnas, datos):
+    # datos ya limpios -> (texto de datos_actuales.sql, texto de imagenes_manuales.sql)
+    bitacora_manuales = [r for r in datos["Bitacora"] if r["tabla_afectada"] in MANUALES]
+    principal = {**datos, "Bitacora": [r for r in datos["Bitacora"] if r["tabla_afectada"] not in MANUALES]}
+    admin_prueba = next(u["id_usuario"] for u in datos["Usuarios"] if u["cargo"] == permisos.ADMINISTRADOR)
+    siguiente_bitacora = max((r["id_bitacora"] for r in datos["Bitacora"]), default=0) + 1
+
+    partes = _encabezado("registros de prueba de la base de datos", [
+        "--   1. Ejecutar primero database/crear_bd.sql (crea la base, las tablas y",
+        "--      el usuario de MySQL app_talentos).",
+        "--   2. Ejecutar este archivo con root:",
+        "--        mysql -u root -p < database\\datos_actuales.sql",
+    ], [
+        "-- Borra los registros iniciales de crear_bd.sql (Administrador, configuración",
+        "-- y bitácora de la instalación) y carga los de prueba con sus mismos IDs. Solo",
+        "-- datos ficticios: las cuentas de prueba del README (con cambio obligatorio de",
+        "-- contraseña) y los talentos generados con datos_ejemplo.py.",
+        "-- Los manuales de texto de crear_bd.sql se conservan (quedan a nombre del",
+        "-- Administrador de prueba). Los manuales con imágenes están aparte, en",
+        "-- database/imagenes_manuales.sql (opcional).",
+    ])
+    partes += ["SET FOREIGN_KEY_CHECKS = 0;", "START TRANSACTION;", ""]
+    partes += [f"DELETE FROM {tabla};" for tabla in reversed(TABLAS_DATOS)]
+    partes += _cargas(TABLAS_DATOS, columnas, principal)
+    partes += ["", "-- Los manuales de crear_bd.sql eran del Administrador inicial, que se borró",
+               f"UPDATE Manuales SET id_usuario_edito = {admin_prueba};",
+               "", "COMMIT;", "SET FOREIGN_KEY_CHECKS = 1;", "",
+               "-- La bitácora de imagenes_manuales.sql usa IDs hasta el último exportado",
+               f"ALTER TABLE Bitacora AUTO_INCREMENT = {siguiente_bitacora};"]
+    partes += _verificacion(TABLAS)
+
+    manuales = _encabezado("manuales con imágenes", [
+        "--   1. Ejecutar primero database/crear_bd.sql y database/datos_actuales.sql.",
+        "--   2. Ejecutar este archivo con root:",
+        "--        mysql -u root -p < database\\imagenes_manuales.sql",
+    ], [
+        "-- Reemplaza los manuales de texto de crear_bd.sql por los manuales de cada",
+        "-- cargo con sus capturas anotadas, y agrega su bitácora. Necesita las cuentas",
+        "-- de prueba de datos_actuales.sql: sin ellas se detiene en el primer INSERT.",
+    ])
+    manuales += ["START TRANSACTION;", "", "DELETE FROM Manual_imagenes;", "DELETE FROM Manuales;"]
+    if bitacora_manuales:
+        ids = ", ".join(str(r["id_bitacora"]) for r in bitacora_manuales)
+        manuales += [f"DELETE FROM Bitacora WHERE id_bitacora IN ({ids});"]
+    manuales += _cargas(MANUALES, columnas, datos)
+    manuales += ["", f"-- Bitacora de los manuales ({len(bitacora_manuales)} registros)"]
+    manuales += list(inserts("Bitacora", columnas["Bitacora"], bitacora_manuales))
+    manuales += ["", "COMMIT;"] + _verificacion(MANUALES)
+    return "\n".join(partes) + "\n", "\n".join(manuales) + "\n"
+
+
+def generar():
     columnas, datos = {}, {}
     with db.transaccion() as cursor:
         for tabla in TABLAS:
             columnas[tabla], datos[tabla] = filas(cursor, tabla)
     datos = limpiar(datos)
-
-    resumen = []
-    for tabla in TABLAS:
-        registros = datos[tabla]
-        resumen.append((tabla, len(registros)))
-        partes += ["", f"-- {tabla} ({len(registros)} registros)"]
-        partes += list(inserts(tabla, columnas[tabla], registros))
-    partes += ["", "COMMIT;", "SET FOREIGN_KEY_CHECKS = 1;", "",
-               "-- Verificación"]
-    partes += [f"SELECT '{tabla}' AS tabla, COUNT(*) AS registros FROM {tabla}"
-               + (";" if i == len(TABLAS) - 1 else " UNION ALL") for i, tabla in enumerate(TABLAS)]
-    ARCHIVO.write_text("\n".join(partes) + "\n", encoding="utf-8", newline="\n")
-    return resumen
+    principal, manuales = scripts(columnas, datos)
+    ARCHIVO.write_text(principal, encoding="utf-8", newline="\n")
+    ARCHIVO_MANUALES.write_text(manuales, encoding="utf-8", newline="\n")
+    return [(tabla, len(datos[tabla])) for tabla in TABLAS]
 
 
 def main():
     resumen = generar()
     for tabla, cantidad in resumen:
         print(f"{tabla:<22} {cantidad:>5}")
-    print(f"Archivo: {ARCHIVO} ({ARCHIVO.stat().st_size / 1024 / 1024:.1f} MB)")
+    for archivo in (ARCHIVO, ARCHIVO_MANUALES):
+        print(f"Archivo: {archivo} ({archivo.stat().st_size / 1024 / 1024:.1f} MB)")
 
 
 if __name__ == "__main__":

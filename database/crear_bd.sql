@@ -452,7 +452,8 @@ SHOW GRANTS FOR 'app_talentos'@'localhost';
 -- Y en la carpeta del proyecto, para la contraseña temporal del Administrador:
 --   .venv\Scripts\python.exe reset_admin.py
 --
--- Para cargar los registros actuales (usuarios, talentos, evaluaciones,
--- manuales, etc.), ejecutar después database\datos_actuales.sql con root.
--- En ese caso el Administrador inicial de la sección 4 se reemplaza por
--- los usuarios del archivo.
+-- Para cargar los datos de prueba (usuarios, talentos, evaluaciones,
+-- notificaciones, etc.), ejecutar después database\datos_actuales.sql con
+-- root. En ese caso el Administrador inicial de la sección 4 se reemplaza por
+-- los usuarios del archivo. Los manuales con imágenes están aparte, en
+-- database\imagenes_manuales.sql (opcional, después de datos_actuales.sql).

@@ -115,6 +115,24 @@ def test_limpiar_deja_solo_datos_de_prueba():
     assert limpio["Configuracion_sistema"][1]["id_usuario_modifico"] == 76
 
 
+def test_manuales_en_un_script_aparte():
+    limpio = exportar_datos.limpiar(_datos())
+    columnas = {tabla: list(registros[0]) for tabla, registros in limpio.items() if registros}
+    principal, manuales = exportar_datos.scripts(columnas, limpio)
+
+    # El volcado principal no toca los manuales: solo los pasa al Administrador de prueba
+    assert "Manual" not in "".join(l for l in principal.splitlines() if l.startswith(("DELETE", "INSERT")))
+    assert "UPDATE Manuales SET id_usuario_edito = 76;" in principal
+    assert "ALTER TABLE Bitacora AUTO_INCREMENT = 9;" in principal
+    # La bitácora de los manuales (id 8) va con ellos
+    assert "INSERT INTO Bitacora" in principal and "    (8, " not in principal
+    assert "DELETE FROM Manuales;" in manuales and "INSERT INTO Manual_imagenes" in manuales
+    assert "DELETE FROM Bitacora WHERE id_bitacora IN (8);" in manuales
+    assert "INSERT INTO Bitacora (id_bitacora, id_usuario, accion, tabla_afectada, id_registro_afectado, " \
+           "detalle) VALUES\n    (8, 76, 'edicion', 'Manuales', 1, NULL);" in manuales
+    assert "FOREIGN_KEY_CHECKS" not in manuales
+
+
 def test_limpiar_se_detiene_si_queda_un_dato_personal():
     datos = _datos()
     datos["Evaluaciones"][1]["reporte_ia"] = "Comparado con Persona Real, destaca"
