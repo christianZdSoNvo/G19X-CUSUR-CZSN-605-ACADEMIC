@@ -87,6 +87,13 @@ python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
+o 
+
+```
+py -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
 ### 3. Base de datos
 
 1. Abrir `database/crear_bd.sql`, llenar la sección **"0. Valores de la instalación"** (contraseña del usuario de MySQL de la aplicación y datos del Administrador inicial) y ejecutarlo con **root**:
