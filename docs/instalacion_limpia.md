@@ -190,28 +190,66 @@ sesión.
 
 ## 8. Revisión en el sistema
 
-**Pendiente.** La instalación quedó terminada (pasos 0 a 7); falta la revisión dentro del
-sistema:
+**Resultado:** OK. La revisión se hizo en tres bloques.
 
-- Con `AdminRH`: cambio de contraseña obligatorio, Inicio, Talentos, evaluación con IA
-  (tiempo con llama3.2:3b sin tarjeta de video y, si sale E-102, el tiempo máximo con el
-  que funcionó), Historial, Paneles analíticos, Reportes (PDF y Excel), Notificaciones y
-  alertas, Manuales con imágenes, Bitácora, Parámetros y tema claro/oscuro.
-- Con `PruebaE`: cambio de contraseña, solo talentos de Finanzas y sus manuales.
-- Con Ollama cerrado: el sistema sigue funcionando y la evaluación muestra E-101.
+### Bloque 1: AdminRH (entrada, talentos e IA)
+
+**Resultado:** OK.
+
+| Revisión | Resultado |
+|---|---|
+| Inicio de sesión con `AdminRH` / `Admin123` | Pidió cambiar la contraseña; las reglas se entienden en pantalla. Se entró con la nueva y, tras cerrar sesión, se volvió a entrar con ella. |
+| Inicio | Muestra los accesos a las secciones y el aviso de notificaciones pendientes. |
+| Talentos | Aparecen los 60 talentos de prueba; se abrió Adriana Sánchez Castro y se ven sus datos. |
+| Evaluación con IA (llama3.2:3b, sin tarjeta de video) | Evaluación completa en unos **60 segundos**, sin códigos de error (dentro del tiempo máximo de 90 s). |
+| Historial | Al buscar a la talento en Historial, su línea de tiempo muestra la nueva evaluación. |
+
+### Bloque 2: AdminRH (resto de las secciones)
+
+**Resultado:** OK, con una observación sobre el README.
+
+| Revisión | Resultado |
+|---|---|
+| Paneles analíticos | Se ven las tarjetas, las gráficas y la matriz 9-box; el clic abre la lista de talentos; filtrar y «Limpiar filtros» funciona. Carga sin demora. |
+| Reporte individual | PDF y Excel se descargan y se abren bien; el PDF trae la evaluación nueva (ya elegida en «Evaluación del PDF»). |
+| Reporte general | PDF y Excel se descargan y se abren bien. |
+| Notificaciones | La bandeja muestra las notificaciones de prueba. |
+| Alertas | Se ve la tabla con las 2 alertas de prueba. **No aparece el botón «Crear las alertas sugeridas»**: solo se muestra cuando no hay ninguna alerta, y `datos_actuales.sql` ya trae 2. No es un error del sistema, pero el README («Alertas y notificaciones») lo presenta sin aclarar esa condición. |
+| Manuales | Se ven con sus imágenes. |
+| Bitácora | Abre sin errores; se ven los inicios de sesión y la evaluación del día. |
+| Parámetros del sistema | Abre sin errores y muestra los valores. |
+| Configuración | El tema cambia a oscuro y a claro sin cerrar la sesión. |
+| Gestión de usuarios | Se ven AdminRH y PruebaE. |
+
+### Bloque 3: PruebaE (Encargado de Finanzas) y sin Ollama
+
+**Resultado:** OK.
+
+| Revisión | Resultado |
+|---|---|
+| Inicio de sesión con `PruebaE` / `Prueba123` | Pidió cambiar la contraseña y se entró con la nueva. |
+| Menú | Talentos, Paneles, Reportes, Historial, Notificaciones, Configuración, Manuales y Soporte. No aparecen Gestión de usuarios, Parámetros del sistema ni Bitácora. |
+| Talentos | Solo talentos de Finanzas, con el filtro de área fijo. La ficha es de solo consulta. «Solicitar reevaluación con IA» está como botón al final de «Datos del talento» (no en la pestaña «Evaluación con IA»). |
+| Paneles e Historial | Solo muestran datos de Finanzas. |
+| Manuales | Solo los del Encargado. |
+| Notificaciones | Puede escribir al Administrador de prueba. |
+| Sin Ollama (cerrado desde el ícono junto al reloj), con AdminRH | La evaluación con IA muestra **E-101**; Talentos, Paneles y Reportes siguen funcionando. |
 
 ## 9. Pruebas automáticas
 
-**Pendiente** (`.venv\Scripts\python.exe -m pytest`).
+**Resultado:** OK. `.venv\Scripts\python.exe -m pytest` →
+`232 passed, 1 skipped in 72.58s (0:01:12)`, el mismo resultado que en el equipo de
+desarrollo.
 
 ## Resumen
 
-- **Estado:** instalación terminada; pendientes la revisión en el sistema (paso 8) y las
-  pruebas automáticas (paso 9).
+- **Estado:** prueba terminada. El sistema se instaló y funcionó completo siguiendo el
+  README; los problemas encontrados son de instrucciones que faltan o confunden, no del
+  sistema.
 - **Tiempo de la instalación (pasos 1 a 7):** aproximadamente 1 hora 15 minutos
   (Python 5 min, MySQL 15 min, Ollama 20 min, modelo 8 min, paquetes de Python 10 min,
   base de datos 1 min, arranque del sistema 2 a 3 min), sin contar la lectura del README.
-- **Correcciones al README** (se aplicarán al terminar la revisión):
+- **Correcciones al README** (por aplicar):
   1. Explicar cómo obtener el código (Git o ZIP) y que la carpeta del proyecto es la que
      contiene `app.py`.
   2. Python: enlace directo a la versión 3.14, marcar **"Add python.exe to PATH"** y usar
@@ -228,3 +266,5 @@ sistema:
   9. En el paso 5, avisar **antes** del comando que no hace falta si se cargó
      `datos_actuales.sql`.
   10. Explicar cómo comprobar que MySQL y Ollama están en marcha.
+  11. «Alertas y notificaciones»: aclarar que el botón «Crear las alertas sugeridas» solo
+      aparece cuando no hay alertas (con `datos_actuales.sql` ya hay 2).
