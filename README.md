@@ -69,34 +69,69 @@ Es más rápido y da el mismo nivel de potencial, pero sus niveles por criterio 
 
 ## Instalación
 
+Las instrucciones son para Windows 10 u 11.
+
+### 0. Obtener el código
+
+- **Con Git:** `git clone <URL del repositorio>`.
+- **Sin Git:** en GitHub, **Code > Download ZIP** y descomprimirlo. El ZIP crea una subcarpeta con el nombre del repositorio; esa subcarpeta es la del proyecto (o se puede mover su contenido a otra carpeta).
+
+En este README, **la carpeta del proyecto** es la que contiene `app.py`.
+
+**Abrir una terminal en la carpeta del proyecto:** todos los comandos de la instalación se escriben en el **Símbolo del sistema (CMD)**, no en PowerShell (PowerShell no acepta el `<` de los comandos de `mysql`). La forma más sencilla de abrirlo: en el Explorador de archivos, entrar a la carpeta del proyecto, escribir `cmd` en la barra de direcciones y presionar Enter. Los comandos se escriben **uno por uno**, esperando a que termine cada uno antes de escribir el siguiente.
+
 ### 1. Programas necesarios
 
-1. Instalar [Python 3.14](https://www.python.org/downloads/).
-2. Instalar [MySQL 8.0](https://dev.mysql.com/downloads/) (y, si se desea, MySQL Workbench).
-3. Instalar [Ollama](https://ollama.com/download) y descargar el modelo:
+1. **Python 3.14.** En la página de [Python 3.14.9](https://www.python.org/downloads/release/python-3149/) (o cualquier 3.14.x en [la lista de versiones](https://www.python.org/downloads/windows/); la primera de la página general de descargas puede ser una versión más nueva), descargar **Windows installer (64-bit)**. En el instalador, marcar **"Add python.exe to PATH"** y elegir **Install Now**. Comprobar en una terminal nueva:
+   ```
+   py -3.14 --version
+   ```
+   Debe responder `Python 3.14.x`. **Solo se probó con Python 3.14** (3.14.7 en el equipo de desarrollo y 3.14.9 en una instalación limpia); no se probó con 3.12 ni 3.13.
+2. **MySQL 8.0.** En [MySQL Installer](https://dev.mysql.com/downloads/installer/), descargar el instalador más ligero (**mysql-installer-web-community**, unos 2 MB; dice "32-bit", pero instala el servidor de 64 bits). La página ofrece iniciar sesión con una cuenta de Oracle: no hace falta, basta con **"No thanks, just start my download"**.
+   - Tipo de instalación: **Server only** (MySQL Workbench es opcional).
+   - En la configuración se pueden dejar los valores recomendados: puerto **3306**, autenticación con contraseña fuerte, servicio de Windows **MySQL80** que arranca con Windows. Anotar la **contraseña de root**.
+   - Agregar MySQL al PATH para poder usar el comando `mysql`: buscar «variables de entorno» en el menú Inicio > **Variables de entorno** > en *Variables del sistema* elegir **Path** > **Editar** > **Nuevo** > `C:\Program Files\MySQL\MySQL Server 8.0\bin` > Aceptar. Después, abrir una terminal **nueva** y comprobar:
+     ```
+     mysql --version
+     ```
+3. **Ollama.** Instalar [Ollama](https://ollama.com/download) con el instalador para Windows y, en una terminal nueva, descargar el modelo:
    ```
    ollama pull llama3:8b
+   ```
+   **En un equipo sin tarjeta de video o con menos de 16 GB de RAM**, descargar en su lugar el modelo ligero (ver [Equipos con menos recursos](#equipos-con-menos-recursos)):
+   ```
+   ollama pull llama3.2:3b
    ```
 
 ### 2. Entorno de Python
 
-En la carpeta del proyecto:
+En la carpeta del proyecto, uno por uno:
 
 ```
-python -m venv .venv
+py -3.14 -m venv .venv
+```
+
+```
+.venv\Scripts\python.exe --version
+```
+
+Debe responder `Python 3.14.x`. Si no, borrar la carpeta `.venv` y revisar la instalación de Python.
+
+```
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-o 
-
-```
-py -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements.txt
-```
+La instalación de los paquetes tarda unos minutos y termina con `Successfully installed ...`.
 
 ### 3. Base de datos
 
-1. Abrir `database/crear_bd.sql`, llenar la sección **"0. Valores de la instalación"** (contraseña del usuario de MySQL de la aplicación y datos del Administrador inicial) y ejecutarlo con **root**:
+Los comandos `mysql ... < archivo.sql` de este paso se escriben en **CMD**; en PowerShell fallan con *«El operador '<' está reservado para uso futuro»*.
+
+1. Abrir `database/crear_bd.sql` con un editor de texto y llenar la sección **"0. Valores de la instalación"**:
+   - `@contrasena_app`: una contraseña **nueva**, solo para el usuario de MySQL `app_talentos` que usa el sistema. Debe ser **distinta de la de root**; es la que después va en `DB_PASSWORD` del `.env`.
+   - Los datos del Administrador inicial (nombre, usuario, correo y teléfono).
+
+   Guardarlo y ejecutarlo con **root** (pide la contraseña de root):
    ```
    mysql -u root -p < database\crear_bd.sql
    ```
@@ -116,20 +151,32 @@ Los scripts `actualizar_*.sql` solo sirven para actualizar una base instalada co
 
 ### 4. Archivo `.env`
 
-Copiar `.env.example` como `.env` y llenarlo:
+Copiar `.env.example` como `.env`, en la misma carpeta. En CMD:
+
+```
+copy .env.example .env
+```
+
+Si se hace con el Bloc de notas (**Guardar como**), hay que escribir el nombre `.env` y cambiar el tipo a **Todos los archivos**; si no, queda como `.env.txt` y el sistema no lo encuentra.
+
+Después, abrir `.env` y llenarlo:
 
 ```
 DB_HOST=localhost
 DB_USER=app_talentos
-DB_PASSWORD=<la contraseña definida en crear_bd.sql>
+DB_PASSWORD=<la contraseña de @contrasena_app en crear_bd.sql>
 DB_NAME=proyecto_talentos
 OLLAMA_HOST=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3:8b
 ```
 
+**En un equipo sin tarjeta de video o con menos de 16 GB de RAM**, poner `OLLAMA_MODEL=llama3.2:3b` (el modelo descargado en el paso 1).
+
 El archivo `.env` nunca se sube al repositorio.
 
 ### 5. Contraseña del Administrador inicial
+
+**Si se cargó `datos_actuales.sql`, este paso no hace falta:** se entra con los [usuarios de prueba](#usuarios-de-prueba).
 
 `crear_bd.sql` crea al Administrador sin contraseña (MySQL no puede calcular PBKDF2). Con el `.env` listo, se le asigna una temporal:
 
@@ -137,11 +184,16 @@ El archivo `.env` nunca se sube al repositorio.
 .venv\Scripts\python.exe reset_admin.py
 ```
 
-El script muestra la contraseña temporal una sola vez; el sistema pide cambiarla en el primer inicio de sesión. Si se cargó `datos_actuales.sql`, este paso no hace falta.
+El script muestra la contraseña temporal una sola vez; el sistema pide cambiarla en el primer inicio de sesión.
 
 ## Ejecución
 
-Con MySQL y Ollama en marcha:
+MySQL y Ollama deben estar en marcha. Normalmente arrancan solos con Windows; para comprobarlo:
+
+- **MySQL:** en la aplicación **Servicios** de Windows, el servicio **MySQL80** debe decir *En ejecución* (si no, clic derecho > **Iniciar**).
+- **Ollama:** su ícono (una llama) debe aparecer junto al reloj, en la barra de tareas (si no, abrir **Ollama** desde el menú Inicio).
+
+En la carpeta del proyecto:
 
 ```
 .venv\Scripts\python.exe -m streamlit run app.py
@@ -155,7 +207,9 @@ En el primer inicio de sesión con el Administrador inicial, el sistema pide cam
 
 Todas las notificaciones son **dentro del sistema**: aparecen en **Notificaciones y alertas** y en **Inicio**, con el número de pendientes junto al nombre de la sección en el menú. **El sistema no envía correos**: nadie recibe un aviso por correo electrónico.
 
-Las alertas automáticas se configuran en **Notificaciones y alertas > Alertas** (el botón "Crear las alertas sugeridas" crea las cuatro reglas básicas) y se revisan en estos momentos:
+Las alertas automáticas se configuran en **Notificaciones y alertas > Alertas**. Cuando todavía no hay ninguna alerta, aparece el botón "Crear las alertas sugeridas", que crea las cuatro reglas básicas; con `datos_actuales.sql` ya hay 2 alertas de prueba, así que el botón no se muestra.
+
+Se revisan en estos momentos:
 
 | Regla | Cuándo se revisa |
 |---|---|

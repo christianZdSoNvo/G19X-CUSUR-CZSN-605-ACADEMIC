@@ -249,7 +249,7 @@ desarrollo.
 - **Tiempo de la instalación (pasos 1 a 7):** aproximadamente 1 hora 15 minutos
   (Python 5 min, MySQL 15 min, Ollama 20 min, modelo 8 min, paquetes de Python 10 min,
   base de datos 1 min, arranque del sistema 2 a 3 min), sin contar la lectura del README.
-- **Correcciones al README** (por aplicar):
+- **Correcciones al README** (aplicadas):
   1. Explicar cómo obtener el código (Git o ZIP) y que la carpeta del proyecto es la que
      contiene `app.py`.
   2. Python: enlace directo a la versión 3.14, marcar **"Add python.exe to PATH"** y usar
