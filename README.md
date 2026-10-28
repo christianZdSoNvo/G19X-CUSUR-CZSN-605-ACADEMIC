@@ -230,6 +230,25 @@ Para validar el sistema, al cargar `database/datos_actuales.sql` quedan disponib
 
 En el primer inicio de sesión, el sistema pide cambiar la contraseña. Son cuentas solo para pruebas: en una instalación real conviene desactivarlas en **Gestión de usuarios**. Si solo se ejecuta `crear_bd.sql`, estos usuarios no existen y se entra con el Administrador inicial (ver el paso 5 de la instalación).
 
+## Recorrido de prueba
+
+Para comprobar en unos minutos que el sistema funciona, con `datos_actuales.sql` (y, de preferencia, `imagenes_manuales.sql`) cargados y el sistema en marcha:
+
+| # | Cuenta | Qué hacer | Qué se espera ver |
+|---|---|---|---|
+| 1 | `AdminRH` | Iniciar sesión con `Admin123`. | El sistema pide cambiar la contraseña; con la nueva se entra a **Inicio**, con los accesos a cada sección y el aviso de notificaciones pendientes. |
+| 2 | `AdminRH` | Abrir **Talentos** y elegir un talento de la lista. | Aparecen los 60 talentos de prueba; la pestaña **Datos del talento** muestra sus datos e indicadores. |
+| 3 | `AdminRH` | En la pestaña **Evaluación con IA**, pulsar **Evaluar con IA**. | Tras unos segundos (cerca de 1 minuto en un equipo sin tarjeta de video) aparecen el nivel de potencial, la puntuación, la tabla de criterios con la **Clasificación 9-box** y el reporte con sugerencias. Si Ollama no está en marcha, aparece **E-101** y el resto del sistema sigue funcionando. |
+| 4 | `AdminRH` | Abrir **Historial y evolución** y buscar el mismo talento. | Su línea de tiempo incluye la evaluación del paso 3. |
+| 5 | `AdminRH` | Abrir **Paneles analíticos**, hacer clic en una celda de la matriz 9-box, cambiar un filtro y pulsar **Limpiar filtros**. | Se ven las tarjetas y las gráficas; el clic muestra la lista de talentos de esa celda; los filtros cambian los datos y **Limpiar filtros** los regresa. |
+| 6 | `AdminRH` | En **Reportes > Reporte individual**, elegir el talento evaluado y pulsar **Generar PDF** y **Generar Excel**; repetir en **Reporte general**. | Los cuatro archivos se descargan y se abren; el PDF individual trae la evaluación del paso 3 (elegida en **Evaluación del PDF**). |
+| 7 | `AdminRH` | Abrir **Notificaciones y alertas**: pestañas **Bandeja** y **Alertas**. | La bandeja muestra las notificaciones de prueba; en **Alertas** están las 2 alertas de prueba (el botón "Crear las alertas sugeridas" no aparece porque ya hay alertas). |
+| 8 | `AdminRH` | Abrir **Gestión de usuarios**, **Parámetros del sistema**, **Bitácora** y **Manuales**. | Se ven `AdminRH` y `PruebaE`, los parámetros con sus valores, los inicios de sesión y la evaluación del día en la bitácora, y los manuales (con imágenes si se cargó `imagenes_manuales.sql`). Cerrar sesión. |
+| 9 | `PruebaE` | Iniciar sesión con `Prueba123`. | El sistema pide cambiar la contraseña. El menú **no** muestra Gestión de usuarios, Parámetros del sistema ni Bitácora. |
+| 10 | `PruebaE` | Abrir **Talentos** y elegir un talento. | Solo aparecen talentos de **Finanzas**, con el filtro de área fijo; la ficha es de solo consulta (sin editar ni **Evaluar con IA**). Al final de **Datos del talento** están **Solicitar corrección de datos** y **Solicitar reevaluación con IA**. |
+| 11 | `PruebaE` | Abrir **Paneles analíticos** e **Historial y evolución**. | Solo muestran datos de Finanzas. |
+| 12 | `PruebaE` | Abrir **Manuales** y **Notificaciones y alertas > Nueva notificación**. | Solo aparecen los manuales del Encargado; puede escribir al Administrador de prueba. |
+
 ## Scripts de apoyo
 
 | Script | Uso |
