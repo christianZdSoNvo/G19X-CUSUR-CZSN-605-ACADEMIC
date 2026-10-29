@@ -317,5 +317,6 @@ Se usó Claude Code (Anthropic) como asistente para escribir código, pruebas y 
 
 ## Documentación
 
+- [docs/arquitectura.md](docs/arquitectura.md): cómo está construido el sistema (capas, las 10 tablas y cómo se relacionan, y el flujo de una evaluación con IA con las funciones que intervienen).
 - El documento de requisitos del producto (PRD) y el alcance del MVP se entregan por separado; las referencias del código del tipo "PRD, 9.1" remiten a sus secciones.
 - Los manuales de uso de cada sección se consultan dentro del sistema, en **Soporte**.
