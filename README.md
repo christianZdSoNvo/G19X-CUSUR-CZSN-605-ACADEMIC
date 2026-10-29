@@ -293,7 +293,7 @@ Cuando ocurre un error, el sistema muestra un mensaje con un código copiable pa
 
 ## IA usada en el desarrollo
 
-Se usó Claude Code (Anthropic) como asistente para escribir y comprobar código y pruebas; por eso aparece como coautor en los commits. El diseño, la documentación, las decisiones y las pruebas en el sistema las hizo el autor.
+Se usó Claude Code (Anthropic) como asistente para escribir código, pruebas y documentación (este README, la bitácora de [docs/instalacion_limpia.md](docs/instalacion_limpia.md) y los documentos del proyecto); por eso aparece como coautor en los commits. El autor tomó las decisiones de diseño y de alcance, revisó lo que generó la IA antes de cada commit y probó el sistema por su cuenta: usó cada sección con las dos cuentas de prueba, hizo la instalación limpia en otro equipo siguiendo solo este README, de donde salió el «Recorrido de prueba».
 
 ## Documentación
 
