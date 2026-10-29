@@ -217,7 +217,7 @@ Se revisan en estos momentos:
 | Baja del desempeño previo | Al guardar la edición del talento |
 | Días sin evaluar | Al iniciar sesión cualquier usuario (`alertas.revisar_sin_evaluar`); Streamlit no tiene tareas programadas, así que no se revisa mientras nadie entra al sistema |
 
-Las reglas no son retroactivas: solo avisan de los cambios que ocurren después de crearlas. Un talento genera una sola alerta de "días sin evaluar" por regla hasta que se vuelve a evaluar.
+Las reglas de cambio de puntuación, de nivel de potencial y de baja del desempeño no son retroactivas: solo avisan de los cambios que ocurren después de crearlas. La de días sin evaluar sí incluye a los talentos que ya llevaban esos días sin evaluación al crearla. Un talento genera una sola alerta de "días sin evaluar" por regla hasta que se vuelve a evaluar.
 
 ## Usuarios de prueba
 
@@ -248,6 +248,26 @@ Para comprobar en unos minutos que el sistema funciona, con `datos_actuales.sql`
 | 10 | `PruebaE` | Abrir **Talentos** y elegir un talento. | Solo aparecen talentos de **Finanzas**, con el filtro de área fijo; la ficha es de solo consulta (sin editar ni **Evaluar con IA**). Al final de **Datos del talento** están **Solicitar corrección de datos** y **Solicitar reevaluación con IA**. |
 | 11 | `PruebaE` | Abrir **Paneles analíticos** e **Historial y evolución**. | Solo muestran datos de Finanzas. |
 | 12 | `PruebaE` | Abrir **Manuales** y **Notificaciones y alertas > Nueva notificación**. | Solo aparecen los manuales del Encargado; puede escribir al Administrador de prueba. |
+
+## Limitaciones conocidas
+
+Lo que el sistema no hace, o hace solo con ciertas condiciones; no son errores.
+
+- **Solo se usa desde el mismo equipo** (`http://localhost:8501`), como se estableció en el diseño.
+- **No envía correos**: las notificaciones y alertas solo aparecen dentro del sistema.
+- **«Días sin evaluar» se revisa al iniciar sesión**, no a una hora fija, como se estableció en el diseño.
+- **Las alertas de cambio de puntuación, de nivel de potencial y de baja del desempeño no son retroactivas**: solo avisan de los cambios que ocurren después de crear la regla.
+- **3 evaluaciones con IA por talento al día**; se cambia en **Parámetros del sistema**.
+- **Sin tarjeta de video, cada evaluación tarda cerca de 1 minuto**; si pasa del tiempo máximo (90 s), se sube en **Parámetros del sistema**.
+- **Un usuario desactivado con la sesión abierta sigue dentro** hasta que cierra sesión o pasan 30 minutos sin actividad.
+- **Solo se probó en Windows** (10 y 11) **con Python 3.14**.
+
+Ideas que quedaron pendientes:
+
+- Importar talentos desde un archivo de Excel (hoy se capturan uno por uno en **Talentos**).
+- Que el Administrador pueda editar desde **Configuración** las partes del prompt de la IA que no afectan el formato de la respuesta (las descripciones de los criterios e indicaciones adicionales de RH), con la posibilidad de restaurar el original.
+- Reordenar las imágenes de un manual y agregar un pie de texto a cada una (hoy se muestran en el orden en que se subieron).
+- Revisar en cada acción si la cuenta sigue activa, para cerrar al momento la sesión de un usuario desactivado.
 
 ## Scripts de apoyo
 
