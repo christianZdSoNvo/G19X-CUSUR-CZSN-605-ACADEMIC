@@ -263,6 +263,9 @@ Lo que el sistema no hace, o hace solo con ciertas condiciones; no son errores.
 - **3 evaluaciones con IA por talento al día**; se cambia en **Parámetros del sistema**.
 - **Sin tarjeta de video, cada evaluación tarda cerca de 1 minuto**; si pasa del tiempo máximo (90 s), se sube en **Parámetros del sistema**.
 - **Un usuario desactivado con la sesión abierta sigue dentro** hasta que cierra sesión o pasan 30 minutos sin actividad.
+- **Recargar la página (F5) cierra la sesión**: la sesión vive en la memoria de Streamlit y se pierde al recargar; hay que volver a iniciar sesión. Para cambiar entre tema claro y oscuro no hace falta recargar (**Configuración**).
+- **El usuario de MySQL `app_talentos` solo existe para `localhost`** (`crear_bd.sql`): el sistema espera MySQL en el mismo equipo. Si la base está en otro equipo o en Docker, hay que crear el usuario con el host desde el que se conecta el sistema (por ejemplo, `'app_talentos'@'%'` o la IP del equipo), darle los mismos `GRANT` de `crear_bd.sql` con ese host y poner su dirección en `DB_HOST` (y `DB_PORT`, si cambia) del `.env`.
+- **Las fechas de evaluaciones, eventos y bitácora las pone MySQL** (`CURDATE()` y `NOW()`), mientras que otras (la revisión de que la fecha de ingreso no sea futura, la antigüedad y las evaluaciones del mes en los paneles y reportes) salen del reloj del equipo. Se probó con MySQL instalado en Windows con la hora local; con un servidor en UTC, las evaluaciones hechas después de las 18:00 (hora del centro de México) quedarían con la fecha del día siguiente.
 - **Solo se probó en Windows** (10 y 11) **con Python 3.14**.
 
 Ideas que quedaron pendientes:
