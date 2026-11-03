@@ -7,6 +7,10 @@ from backend.interfaz import ICONO, LOGO, NOMBRE, SIGNIFICADO, ocultar_barra_lat
 
 st.set_page_config(page_title=NOMBRE, page_icon=ICONO, layout="centered")
 
+# Páginas que se ven a todo lo ancho; el ancho se decide solo aquí: si cada página lo
+# cambiara, al volver a ejecutarse (p. ej. un clic en la 9-box) regresaba a "centered"
+PAGINAS_ANCHAS = ("paneles", "bitacora")
+
 
 def dentro_del_sistema(usuario):
     # Sesión iniciada y sin cambio obligatorio de contraseña pendiente
@@ -34,6 +38,7 @@ try:
     # Todas las páginas se registran, pero el menú de Streamlit queda oculto: el menú se
     # dibuja con enlaces para poner la selección de paneles debajo de "Paneles analíticos"
     actual = st.navigation(paginas, position="hidden")
+    st.set_page_config(layout="wide" if actual.url_path in PAGINAS_ANCHAS else "centered")
     if dentro_del_sistema(usuario):
         # Logo arriba a la izquierda de la barra lateral; con la barra cerrada, arriba
         # a la izquierda de la pantalla de contenido

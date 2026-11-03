@@ -51,7 +51,11 @@ def distribucion(tabla):
                hovertemplate="%{x}<br>" + NOMBRE_NIVEL[nivel] + ": %{y}<extra></extra>")
         for nivel in analitica.NIVELES
     ])
-    return _ajustar(figura, barmode="stack", yaxis=_eje_conteo("Talentos", tabla.sum(axis=1).max()))
+    # En pantallas angostas Plotly inclina los nombres de las áreas: el margen automático
+    # les deja espacio y la leyenda va arriba para que no los tape
+    _ajustar(figura, barmode="stack", yaxis=_eje_conteo("Talentos", tabla.sum(axis=1).max()),
+             xaxis={"automargin": True})
+    return figura.update_layout(legend={"y": 1.02, "yanchor": "bottom"})
 
 
 def barras_nivel(conteo):
@@ -72,9 +76,11 @@ def matriz_9box(conteo):
     colores = paleta()
     niveles = list(analitica.NIVELES)
     nombres = [[evaluaciones.MATRIZ_9BOX[(potencial, desempeno)] for desempeno in niveles] for potencial in niveles]
+    # Cada nombre en dos renglones ("Diamante<br>en bruto") para que no se encimen en pantallas angostas
+    textos = [[nombre.replace(" ", "<br>", 1) for nombre in fila] for fila in nombres]
     figura = go.Figure(go.Heatmap(
-        x=niveles, y=niveles, z=[[conteo[nombre] for nombre in fila] for fila in nombres], text=nombres,
-        texttemplate="<b>%{z}</b><br>%{text}", textfont={"size": 13},
+        x=niveles, y=niveles, z=[[conteo[nombre] for nombre in fila] for fila in nombres], text=textos,
+        texttemplate="<b>%{z}</b><br>%{text}", textfont={"size": 12},
         colorscale=[[0, colores["vacio"]], [1, colores["medio"]]], zmin=0, zmax=max(max(conteo.values()), 1),
         showscale=False, xgap=6, ygap=6, hoverinfo="skip",
     ))

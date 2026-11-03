@@ -9,7 +9,6 @@ from backend import bitacora, permisos, sesion, usuarios
 usuario = sesion.usuario_actual()
 permisos.exigir(usuario, "bitacora")
 
-st.set_page_config(layout="wide")
 st.title("Bitácora")
 st.caption("Registro de las acciones del sistema (PRD, 8.5). Solo consulta: no se puede editar ni borrar.")
 

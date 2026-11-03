@@ -7,7 +7,6 @@ from backend import analitica, catalogos, evaluaciones, graficas, menu, permisos
 
 usuario = sesion.usuario_actual()
 permisos.exigir(usuario, "paneles")
-st.set_page_config(layout="wide")
 
 FILTROS = ("filtro_area", "filtro_niveles", "filtro_9box", "filtro_fechas", "filtro_puntuacion", "filtro_antiguedad")
 
