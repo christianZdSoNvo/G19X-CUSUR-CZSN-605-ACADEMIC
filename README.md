@@ -288,6 +288,11 @@ Ideas que quedaron pendientes:
 
 Las pruebas que usan MySQL trabajan dentro de una transacción que se deshace al final, por lo que no dejan registros. Ollama se simula, así que no hace falta que esté en marcha.
 
+Las pruebas pasan con la base recién creada (solo `crear_bd.sql`) y con los datos de prueba cargados. Algunas se saltan solas según los datos que haya, y pytest lo indica con una `s` y el motivo (con `-rs` se ve la lista):
+
+- **Solo con `crear_bd.sql`:** se saltan 2 pruebas de pantallas que necesitan evaluaciones o un segundo usuario («Requiere los datos de database/datos_actuales.sql»).
+- **Con `datos_actuales.sql`:** se salta la prueba de cargar y borrar los datos de ejemplo, porque ya están cargados.
+
 ## Estructura del proyecto
 
 ```

@@ -15,6 +15,14 @@ TALENTO = {"nombre": "Foto Pytest", "area": "Calidad", "correo": "foto.pytest@ej
            "tel_mx": "5511112222", "fecha_ingreso": datetime.date(2024, 1, 15), "desempeno_previo": 70}
 
 
+def _requiere_datos(consulta, parametros=()):
+    # Con solo crear_bd.sql no hay evaluaciones ni otros usuarios: la prueba se salta
+    with db.transaccion() as cursor:
+        cursor.execute(consulta, parametros)
+        if cursor.fetchone()["n"] == 0:
+            pytest.skip("Requiere los datos de database/datos_actuales.sql")
+
+
 def _imagen(formato="PNG", tamano=(800, 500)):
     salida = io.BytesIO()
     Image.new("RGB", tamano, (201, 162, 39)).save(salida, formato)
@@ -132,6 +140,8 @@ def test_inicio_muestra_las_secciones(app_con_sesion):
 
 
 def test_paneles_elegidos_en_el_menu(app_con_sesion):
+    # Sin evaluaciones, Paneles no dibuja la 9-box ni el histograma
+    _requiere_datos("SELECT COUNT(*) AS n FROM Evaluaciones")
     app = app_con_sesion({**ADMINISTRADOR, "nombre": "Prueba"}).run()
     # El selector de paneles solo aparece en la página de Paneles analíticos
     assert not [pills for pills in app.sidebar.get("button_group") if pills.label == "Paneles a mostrar"]
@@ -157,6 +167,9 @@ def test_menu_de_la_barra_lateral_por_rol(app_con_sesion):
 def test_nueva_notificacion_queda_en_blanco_al_enviar(app_con_sesion, monkeypatch):
     from backend import notificaciones
     monkeypatch.setattr(notificaciones, "enviar", lambda usuario, datos: ({}, 1))
+    # Hace falta otro usuario activo a quien escribir
+    _requiere_datos("SELECT COUNT(*) AS n FROM Usuarios WHERE activo AND id_usuario <> %s",
+                    (ADMINISTRADOR["id_usuario"],))
     app = app_con_sesion({**ADMINISTRADOR, "nombre": "Prueba"}).run()
     app.switch_page("paginas/notificaciones.py").run()
     app.selectbox(key="noti_destinatario").select_index(0)
