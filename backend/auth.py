@@ -9,6 +9,10 @@ def _parametros(cursor):
     return {fila["clave"]: int(fila["valor"]) for fila in cursor.fetchall()}
 
 
+def texto_minutos(minutos):
+    return "1 minuto" if minutos == 1 else f"{minutos} minutos"
+
+
 def _intento_fallido(cursor, id_usuario, detalle):
     bitacora.registrar(cursor, id_usuario, "intento_fallido", "Usuarios", id_usuario, detalle)
 
@@ -66,7 +70,8 @@ def iniciar_sesion(usuario, contrasena):
         parametros = _parametros(cursor)
         cursor.execute(
             "SELECT id_usuario, nombre, cargo, area, contrasena, salt, activo, intentos_fallidos, "
-            "debe_cambiar_contrasena, bloqueado_hasta > NOW() AS bloqueado "
+            "debe_cambiar_contrasena, bloqueado_hasta > NOW() AS bloqueado, "
+            "CEIL(TIMESTAMPDIFF(SECOND, NOW(), bloqueado_hasta) / 60) AS minutos_restantes "
             "FROM Usuarios WHERE usuario = %s",
             (usuario,),
         )
@@ -74,6 +79,10 @@ def iniciar_sesion(usuario, contrasena):
         codigo = _validar_acceso(cursor, fila, usuario, contrasena, parametros)
 
     # Se lanza fuera de la transacción para que los intentos fallidos sí se guarden
+    if codigo == "E-302":
+        # Ya bloqueada: lo que le falta; recién bloqueada: minutos_bloqueo de Parámetros
+        minutos = int(fila["minutos_restantes"]) if fila["bloqueado"] else parametros["minutos_bloqueo"]
+        raise errores.ErrorSistema(codigo, tiempo=texto_minutos(minutos))
     if codigo:
         raise errores.ErrorSistema(codigo)
     return {

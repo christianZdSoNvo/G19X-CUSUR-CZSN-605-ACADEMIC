@@ -1,7 +1,7 @@
 import httpx
 import ollama
 
-from backend import alertas, bitacora, db, errores, ia, permisos
+from backend import alertas, bitacora, config, db, errores, ia, permisos
 
 # Evaluación con IA (PRD, 6.8, 9.10, 9.11 y 10). Cada llamada al modelo cuenta como
 # un intento, aunque falle o se pase del tiempo. Los intentos se cuentan en la
@@ -83,6 +83,19 @@ def ultima(usuario, id_talento):
         return cursor.fetchone()
 
 
+def _error(codigo):
+    # Con E-101 se distingue si Ollama no responde o si falta descargar el modelo del .env;
+    # cualquier otra falla de Ollama queda con el mensaje del catálogo
+    if codigo == "E-101":
+        try:
+            _, disponible = ia.probar_conexion()
+        except Exception:
+            return errores.ErrorSistema(codigo, errores.OLLAMA_NO_RESPONDE)
+        if not disponible:
+            return errores.ErrorSistema(codigo, errores.MODELO_NO_DESCARGADO, modelo=config.OLLAMA_MODEL)
+    return errores.ErrorSistema(codigo)
+
+
 def evaluar(administrador, id_talento):
     # Pide la evaluación al modelo, la valida y la guarda con su clasificación 9-box.
     # Devuelve la evaluación guardada; si falla lanza ErrorSistema (E-101 a E-104).
@@ -106,7 +119,7 @@ def evaluar(administrador, id_talento):
         ia.asegurar_carga()
     except (ConnectionError, ollama.ResponseError) as error:
         errores.registrar("E-101", error)
-        raise errores.ErrorSistema("E-101") from error
+        raise _error("E-101") from error
     while usados < disponibles:
         prompt = ia.construir_prompt(talento, reintento=bool(rechazos))
         try:
@@ -136,7 +149,7 @@ def evaluar(administrador, id_talento):
             with db.transaccion() as cursor:
                 bitacora.registrar(cursor, administrador["id_usuario"], "evaluacion_ia", "Talentos", id_talento,
                                    {"resultado": codigo, "intentos": usados, "rechazos": rechazos})
-        raise errores.ErrorSistema(codigo)
+        raise _error(codigo)
 
     evaluacion["clasificacion_9box"] = clasificar_9box(talento["desempeno_previo"],
                                                        evaluacion["potencial_crecimiento_nivel"])

@@ -2,9 +2,10 @@ import datetime
 import json
 
 import httpx
+import ollama
 import pytest
 
-from backend import db, errores, evaluaciones, ia, permisos, talentos
+from backend import config, db, errores, evaluaciones, ia, permisos, talentos
 
 VALIDA = {
     "desempeno_pre_ev": "alto", "resultados_cap_ev": "medio", "experiencia_lab_ev": "alto",
@@ -97,7 +98,7 @@ def test_reporte_cortado_por_el_esquema_termina_en_oracion_completa():
 @pytest.fixture
 def modelo(monkeypatch):
     # Cola de respuestas del modelo simulado: texto o excepción; guarda los prompts recibidos
-    simulado = {"respuestas": [], "prompts": []}
+    simulado = {"respuestas": [], "prompts": [], "descargado": True}
 
     def pedir(prompt, segundos):
         simulado["prompts"].append(prompt)
@@ -108,6 +109,7 @@ def modelo(monkeypatch):
 
     monkeypatch.setattr(ia, "pedir_evaluacion", pedir)
     monkeypatch.setattr(ia, "asegurar_carga", lambda: None)
+    monkeypatch.setattr(ia, "probar_conexion", lambda: ([], simulado["descargado"]))
     return simulado
 
 
@@ -173,6 +175,50 @@ def test_errores_de_conexion_y_tiempo(administrador, talento, modelo):
     assert _codigo(administrador, talento) == "E-102"
     assert evaluaciones.estado(talento)["usados"] == 1
     assert evaluaciones.ultima(administrador, talento) is None
+
+
+def test_e101_ollama_apagado(administrador, talento, modelo, monkeypatch):
+    def apagado():
+        raise ConnectionError("Ollama apagado")
+
+    modelo["respuestas"] = [ConnectionError("Ollama apagado")]
+    monkeypatch.setattr(ia, "probar_conexion", apagado)
+    with pytest.raises(errores.ErrorSistema) as error:
+        evaluaciones.evaluar(administrador, talento)
+    assert error.value.codigo == "E-101"
+    assert error.value.mensaje == errores.OLLAMA_NO_RESPONDE
+
+
+def test_e101_otra_falla_usa_el_mensaje_del_catalogo(administrador, talento, modelo):
+    # Ollama responde y el modelo está descargado, pero falla (p. ej. sin memoria)
+    modelo["respuestas"] = [ollama.ResponseError("out of memory", 500)]
+    with pytest.raises(errores.ErrorSistema) as error:
+        evaluaciones.evaluar(administrador, talento)
+    assert error.value.mensaje == errores.CATALOGO["E-101"]
+    assert "Reinicie" not in error.value.mensaje
+
+
+def test_e101_modelo_no_descargado(administrador, talento, modelo):
+    # Ollama responde pero el modelo del .env no está descargado: el mensaje dice cómo descargarlo
+    modelo["descargado"] = False
+    modelo["respuestas"] = [ollama.ResponseError("model not found", 404)]
+    with pytest.raises(errores.ErrorSistema) as error:
+        evaluaciones.evaluar(administrador, talento)
+    assert error.value.codigo == "E-101"
+    assert f"ollama pull {config.OLLAMA_MODEL}" in error.value.mensaje
+    assert "Reinicie" not in error.value.mensaje
+    assert evaluaciones.estado(talento)["usados"] == 0
+
+
+def test_e101_modelo_no_descargado_al_cargarlo(administrador, talento, modelo, monkeypatch):
+    def cargar():
+        raise ollama.ResponseError("model not found", 404)
+
+    modelo["descargado"] = False
+    monkeypatch.setattr(ia, "asegurar_carga", cargar)
+    with pytest.raises(errores.ErrorSistema) as error:
+        evaluaciones.evaluar(administrador, talento)
+    assert f"ollama pull {config.OLLAMA_MODEL}" in error.value.mensaje
 
 
 def test_encargado_no_evalua(administrador, talento, modelo):

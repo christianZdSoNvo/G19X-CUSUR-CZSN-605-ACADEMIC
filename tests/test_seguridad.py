@@ -101,6 +101,31 @@ def test_inicio_de_sesion_actualiza_el_formato_anterior(administrador):
     auth.iniciar_sesion("prueba_hash", "Clave123")
 
 
+def _mensaje_al_entrar(usuario, contrasena):
+    with pytest.raises(errores.ErrorSistema) as error:
+        auth.iniciar_sesion(usuario, contrasena)
+    return error.value.codigo, error.value.mensaje
+
+
+def test_bloqueo_dice_los_minutos_de_parametros(administrador):
+    # Con minutos_bloqueo en 5 (Parámetros del sistema) el mensaje dice 5 minutos, no 15
+    with db.transaccion() as cursor:
+        cursor.execute("UPDATE Configuracion_sistema SET valor = '5' WHERE clave = 'minutos_bloqueo'")
+        cursor.execute("UPDATE Configuracion_sistema SET valor = '3' WHERE clave = 'max_intentos_login'")
+    _crear_usuario(seguridad.hashear("Clave123", SALT))
+    assert _mensaje_al_entrar("prueba_hash", "Otra123")[0] == "E-301"
+    assert _mensaje_al_entrar("prueba_hash", "Otra123")[0] == "E-301"
+    esperado = ("E-302", "Cuenta bloqueada temporalmente. Intente en 5 minutos.")
+    assert _mensaje_al_entrar("prueba_hash", "Otra123") == esperado
+    # Ya bloqueada (aunque la contraseña sea correcta): dice lo que le falta
+    assert _mensaje_al_entrar("prueba_hash", "Clave123") == esperado
+
+
+def test_texto_minutos():
+    assert auth.texto_minutos(1) == "1 minuto"
+    assert auth.texto_minutos(15) == "15 minutos"
+
+
 def test_administrador_pendiente_no_puede_entrar(administrador):
     id_usuario = _crear_usuario(seguridad.PENDIENTE)
     with pytest.raises(errores.ErrorSistema) as error:

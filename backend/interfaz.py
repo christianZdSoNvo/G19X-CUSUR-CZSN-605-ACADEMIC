@@ -17,10 +17,10 @@ ICONO = str(RECURSOS / "icono.png")
 AVATAR = str(RECURSOS / "avatar.png")
 
 
-def pantalla_error(codigo):
+def pantalla_error(codigo, mensaje=None):
     # Pantalla de error del PRD, sección 7: mensaje, código para copiar y "Reiniciar"
     st.session_state["ultimo_codigo_error"] = codigo
-    st.error(errores.CATALOGO[codigo])
+    st.error(mensaje or errores.CATALOGO[codigo])
     st.caption("Código de error (use el ícono de la derecha para copiarlo):")
     st.code(codigo, language=None)
     if codigo == "E-304":

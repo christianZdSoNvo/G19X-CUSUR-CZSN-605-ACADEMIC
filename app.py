@@ -64,4 +64,4 @@ try:
 except errores.ErrorSistema as error:
     if not dentro_del_sistema(sesion.usuario_actual()):
         ocultar_barra_lateral()
-    pantalla_error(error.codigo)
+    pantalla_error(error.codigo, error.mensaje)
