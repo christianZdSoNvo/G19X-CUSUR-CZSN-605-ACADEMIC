@@ -1,7 +1,32 @@
+import importlib
+
 import mysql.connector
 import pytest
 
-from backend import db, errores
+from backend import config, db, errores
+
+
+@pytest.mark.parametrize("valor, puerto", [(None, 3306), ("3307", 3307)])
+def test_puerto_de_mysql_desde_env(monkeypatch, valor, puerto):
+    # Sin DB_PORT en el .env se usa el 3306
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
+    if valor is None:
+        monkeypatch.delenv("DB_PORT", raising=False)
+    else:
+        monkeypatch.setenv("DB_PORT", valor)
+    try:
+        assert importlib.reload(config).DB_PORT == puerto
+    finally:
+        monkeypatch.undo()
+        importlib.reload(config)
+
+
+def test_la_conexion_usa_el_puerto(monkeypatch):
+    recibidos = {}
+    monkeypatch.setattr(config, "DB_PORT", 3307)
+    monkeypatch.setattr(mysql.connector, "connect", lambda **parametros: recibidos.update(parametros))
+    db.obtener_conexion()
+    assert recibidos["port"] == 3307 and recibidos["host"] == config.DB_HOST
 
 
 @pytest.mark.parametrize("error, codigo", [

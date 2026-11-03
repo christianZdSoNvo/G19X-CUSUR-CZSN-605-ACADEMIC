@@ -8,6 +8,7 @@ from backend import config, errores
 def obtener_conexion(con_base_de_datos=True):
     parametros = {
         "host": config.DB_HOST,
+        "port": config.DB_PORT,
         "user": config.DB_USER,
         "password": config.DB_PASSWORD,
     }

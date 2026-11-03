@@ -163,12 +163,15 @@ Después, abrir `.env` y llenarlo:
 
 ```
 DB_HOST=localhost
+DB_PORT=3306
 DB_USER=app_talentos
 DB_PASSWORD=<la contraseña de @contrasena_app en crear_bd.sql>
 DB_NAME=proyecto_talentos
 OLLAMA_HOST=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3:8b
 ```
+
+`DB_PORT` se cambia solo si MySQL usa otro puerto (por ejemplo, porque el 3306 ya lo ocupa otro MySQL o XAMPP); si no se escribe, se usa el 3306. En ese caso, los comandos `mysql` del paso 3 también llevan el puerto: `mysql -u root -p -P <puerto> ...`.
 
 **En un equipo sin tarjeta de video o con menos de 16 GB de RAM**, poner `OLLAMA_MODEL=llama3.2:3b` (el modelo descargado en el paso 1).
 
