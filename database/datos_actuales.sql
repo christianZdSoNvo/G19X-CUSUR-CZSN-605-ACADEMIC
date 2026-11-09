@@ -1,6 +1,6 @@
 -- =====================================================================
 -- TalentOS: registros de prueba de la base de datos
--- Generado con exportar_datos.py el 23/10/2026 14:27
+-- Generado con exportar_datos.py el 09/11/2026 16:19
 -- =====================================================================
 --
 -- CÓMO SE EJECUTA
@@ -161,7 +161,7 @@ INSERT INTO Talentos (id_talento, area, nombre, correo, tel_mx, fecha_ingreso, d
 INSERT INTO Talentos (id_talento, area, nombre, correo, tel_mx, fecha_ingreso, desempeno_previo, competencias, capacitacion, experiencia, objetivos_futuros, liderazgo_previo, activo, fecha_baja, motivo_baja, fecha_modificacion, foto) VALUES
     (311, 'Calidad', 'Fernando Méndez Ortega', 'fernando.mendez@correo.com', '7766666666', '2024-03-12', 98, 'Pruebas de regresión y de rendimiento', 'Maestría en curso, dos certificaciones internacionales y mentoría de nuevos ingresos.', 'Cuatro años de experiencia, dos de ellos en el sector tecnológico.', 'Llegar a un puesto de gerencia y formar a nuevos talentos.', 'Coordina proyectos entre áreas y es referente técnico del equipo.', 1, NULL, NULL, '2024-03-12', NULL);
 
--- Evaluaciones (101 registros)
+-- Evaluaciones (102 registros)
 INSERT INTO Evaluaciones (id_evaluacion, id_talento, reporte_ia, puntuacion_talento_por_ia, fecha_evaluacion, clasificacion_9box, potencial_crecimiento_nivel, desempeno_pre_ev, resultados_cap_ev, experiencia_lab_ev, objetivos_fut_ev, competencias_ev, liderazgo_prev_ev) VALUES
     (267, 252, 'Ximena Rojas Sánchez presenta un potencial de crecimiento bajo (20 de 100 puntos), con un desempeño previo de 17 de 100. En general cumple con las tareas asignadas y muestra disposición para aprender. Su clasificación en la matriz 9-box es "Necesita mejora". Se recomienda un plan de desarrollo con metas mensuales, acompañamiento cercano y capacitación básica. (Reporte de ejemplo, no generado por la IA.)', 20, '2025-12-09', 'Necesita mejora', 'bajo', 'bajo', 'bajo', 'bajo', 'bajo', 'bajo', 'bajo'),
     (268, 253, 'Juan Vargas Ruiz presenta un potencial de crecimiento medio (32 de 100 puntos), con un desempeño previo de 54 de 100. En general tiene una base sólida en su área y resultados constantes. Su clasificación en la matriz 9-box es "Colaborador sólido". Se recomienda asignarle proyectos con mayor responsabilidad y una certificación de su especialidad. (Reporte de ejemplo, no generado por la IA.)', 32, '2025-07-31', 'Colaborador sólido', 'medio', 'medio', 'medio', 'alto', 'alto', 'medio', 'medio'),
@@ -265,9 +265,10 @@ INSERT INTO Evaluaciones (id_evaluacion, id_talento, reporte_ia, puntuacion_tale
     (554, 277, 'Adriana Sánchez Castro es un talento con un desempeño previo moderado, logrando un 16 de 100. A pesar de ser su primer empleo formal, ha demostrado habilidades en comunicación efectiva y ha obtenido certificaciones relevantes. Sin embargo, su experiencia laboral es limitada, lo que afecta su evaluación en este criterio. Adriana tiene objetivos claros de especializarse en su área actual, lo que es positivo. También destaca por sus competencias en cumplimiento fiscal y facturación electrónica. No tiene experiencia de liderazgo previa, pero su disposición a aprender y crecer es apreciable. Se sugiere que Adriana se enfrente en proyectos que le permitan desarrollar habilidades en liderazgo y comunicación efectiva, y que busque oportunidades de capacitación y desarrollo en su área de especialización.', 55, '2026-10-07', 'Necesita desarrollo', 'medio', 'medio', 'alto', 'bajo', 'alto', 'alto', 'bajo'),
     (555, 277, 'Adriana Sánchez Castro es un talento con un desempeño previo moderado, logrando un 16 de 100. A pesar de ser un primer empleo formal, su experiencia laboral es limitada. Sin embargo, destaca por sus resultados de capacitación, como el curso de comunicación efectiva y certificación básica de su especialidad. Adriana tiene objetivos claros de especializarse en su área actual y ha demostrado competencias en cumplimiento fiscal y facturación electrónica. Sin experiencia de liderazgo previa, tiene un potencial de crecimiento moderado. Se sugiere que Adriana se enfrente a proyectos que le permitan desarrollar habilidades en liderazgo y comunicación efectiva, y que busque oportunidades de capacitación y formación en su área de especialización.', 62, '2026-10-07', 'Necesita desarrollo', 'medio', 'medio', 'alto', 'bajo', 'alto', 'alto', 'bajo');
 INSERT INTO Evaluaciones (id_evaluacion, id_talento, reporte_ia, puntuacion_talento_por_ia, fecha_evaluacion, clasificacion_9box, potencial_crecimiento_nivel, desempeno_pre_ev, resultados_cap_ev, experiencia_lab_ev, objetivos_fut_ev, competencias_ev, liderazgo_prev_ev) VALUES
-    (556, 277, 'Adriana Sánchez Castro es un talento con un desempeño previo moderado, logrando un 16 de 100. A pesar de ser un primer empleo formal, su experiencia laboral es limitada, con prácticas profesionales de seis meses. Sin embargo, su participación en un curso de comunicación efectiva y certificación básica de su especialidad es un logro importante. Adriana tiene objetivos claros para especializarse en su área actual, lo que sugiere una disposición a asumir reto y crecer profesionalmente. En cuanto a competencias, destaca su cumplimiento fiscal y facturación electrónica, lo que demuestra habilidades organizativas y administrativas. En cuanto a liderazgo, no tiene experiencia previa, pero su potencial de crecimiento es moderado. Sugiero acciones y proyectos que se pueden aplicar al talento, como asistir a cursos o talleres para mejorar habilidades específicas, y participar en proyectos que le permitan desarrollar liderazgo y toma de decisiones.', 62, '2026-10-07', 'Necesita desarrollo', 'medio', 'medio', 'alto', 'bajo', 'medio', 'alto', 'bajo');
+    (556, 277, 'Adriana Sánchez Castro es un talento con un desempeño previo moderado, logrando un 16 de 100. A pesar de ser un primer empleo formal, su experiencia laboral es limitada, con prácticas profesionales de seis meses. Sin embargo, su participación en un curso de comunicación efectiva y certificación básica de su especialidad es un logro importante. Adriana tiene objetivos claros para especializarse en su área actual, lo que sugiere una disposición a asumir reto y crecer profesionalmente. En cuanto a competencias, destaca su cumplimiento fiscal y facturación electrónica, lo que demuestra habilidades organizativas y administrativas. En cuanto a liderazgo, no tiene experiencia previa, pero su potencial de crecimiento es moderado. Sugiero acciones y proyectos que se pueden aplicar al talento, como asistir a cursos o talleres para mejorar habilidades específicas, y participar en proyectos que le permitan desarrollar liderazgo y toma de decisiones.', 62, '2026-10-07', 'Necesita desarrollo', 'medio', 'medio', 'alto', 'bajo', 'medio', 'alto', 'bajo'),
+    (748, 277, 'Adriana Sánchez Castro es un talento con un desempeño previo moderado, logrando un 16 de 100. A pesar de ser un primer empleo formal, su experiencia laboral es limitada. Sin embargo, su participación en un curso de comunicación efectiva y certificación básica en su especialidad es un logro significativo. Su objetivo futuro de especializarse en su área actual es realista y muestra su disposición a crecer profesionalmente. Adriana también destaca por su cumplimiento fiscal y facturación electrónica, lo que demuestra sus habilidades organizativas. Sin experiencia de liderazgo previa, es importante que se enfrente a oportunidades de desarrollo en este sentido. Se sugiere que Adriana se enfrente a proyectos que involucren colaboración y comunicación efectiva, y que busque oportunidades de mentoría o liderazgo en pequeños proyectos para desarrollar sus habilidades en este sentido.', 55, '2026-11-03', 'Necesita desarrollo', 'medio', 'medio', 'alto', 'bajo', 'alto', 'alto', 'bajo');
 
--- Eventos_talento (191 registros)
+-- Eventos_talento (192 registros)
 INSERT INTO Eventos_talento (id_evento, id_talento, tipo_evento, descripcion, fecha_evento, id_usuario_registro, fecha_registro) VALUES
     (631, 252, 'ingreso', 'Ingreso al área Finanzas.', '2023-10-10', 76, '2026-09-30 10:16:11'),
     (632, 252, 'evaluacion_ia', 'Evaluación con IA: potencial bajo, 20 puntos, Necesita mejora.', '2025-12-09', 76, '2026-09-30 10:16:11'),
@@ -462,7 +463,8 @@ INSERT INTO Eventos_talento (id_evento, id_talento, tipo_evento, descripcion, fe
     (933, 253, 'cambio_desempeno', 'Desempeño previo: 54 -> 40.', '2026-09-30', 76, '2026-09-30 12:34:54'),
     (1327, 277, 'evaluacion_ia', 'Evaluación con IA: potencial medio, 55 puntos, Necesita desarrollo.', '2026-10-07', 76, '2026-10-07 13:59:51'),
     (1328, 277, 'evaluacion_ia', 'Evaluación con IA: potencial medio, 62 puntos, Necesita desarrollo.', '2026-10-07', 76, '2026-10-07 14:04:32'),
-    (1329, 277, 'evaluacion_ia', 'Evaluación con IA: potencial medio, 62 puntos, Necesita desarrollo.', '2026-10-07', 76, '2026-10-07 14:05:30');
+    (1329, 277, 'evaluacion_ia', 'Evaluación con IA: potencial medio, 62 puntos, Necesita desarrollo.', '2026-10-07', 76, '2026-10-07 14:05:30'),
+    (1905, 277, 'evaluacion_ia', 'Evaluación con IA: potencial medio, 55 puntos, Necesita desarrollo.', '2026-11-03', 76, '2026-11-03 12:40:24');
 
 -- Notificaciones (62 registros)
 INSERT INTO Notificaciones (id_noti, fecha_creacion, id_emisor, id_destinatario, contenido, estado, tipo, id_talento, respuesta, fecha_revision, grado_emergencia) VALUES
@@ -530,7 +532,7 @@ INSERT INTO Notificaciones (id_noti, fecha_creacion, id_emisor, id_destinatario,
     (771, '2026-10-11 19:27:17', NULL, 76, 'Alerta "Talento sin evaluar por 10 días": Eduardo Ramos Herrera (ID 262, Recursos Humanos): lleva 402 días sin evaluación con IA (última: 04/09/2025).', 'pendiente', 'alerta_automatica', 262, NULL, NULL, 'medio'),
     (827, '2026-10-21 16:44:42', NULL, 76, 'Alerta "Talento sin evaluar por 10 días": Adriana Sánchez Castro (ID 277, Finanzas): lleva 14 días sin evaluación con IA (última: 07/10/2026).', 'pendiente', 'alerta_automatica', 277, NULL, NULL, 'medio');
 
--- Bitacora (208 registros)
+-- Bitacora (233 registros)
 INSERT INTO Bitacora (id_bitacora, id_usuario, fecha_hora, accion, tabla_afectada, id_registro_afectado, detalle) VALUES
     (577, 76, '2026-09-30 10:16:11', 'alta', 'Talentos', 252, '{"origen": "datos_ejemplo.py"}'),
     (578, 76, '2026-09-30 10:16:11', 'alta', 'Talentos', 253, '{"origen": "datos_ejemplo.py"}'),
@@ -743,7 +745,32 @@ INSERT INTO Bitacora (id_bitacora, id_usuario, fecha_hora, accion, tabla_afectad
     (2502, 117, '2026-10-21 17:11:01', 'edicion', 'Usuarios', 117, '{"campo": "contrasena"}'),
     (2503, 117, '2026-10-21 17:11:04', 'cierre_sesion', 'Usuarios', 117, '{"motivo": "manual"}'),
     (2504, 76, '2026-10-21 17:31:02', 'inicio_sesion', 'Usuarios', 76, NULL),
-    (2505, 76, '2026-10-21 17:41:39', 'inicio_sesion', 'Usuarios', 76, NULL);
+    (2505, 76, '2026-10-21 17:41:39', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (2816, 76, '2026-11-03 11:27:11', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (2817, 76, '2026-11-03 11:27:30', 'configuracion', 'Configuracion_sistema', 8, '{"clave": "minutos_bloqueo", "anterior": "15", "nuevo": "3"}'),
+    (2818, 76, '2026-11-03 11:27:33', 'cierre_sesion', 'Usuarios', 76, '{"motivo": "manual"}'),
+    (2819, 76, '2026-11-03 11:27:41', 'intento_fallido', 'Usuarios', 76, '{"motivo": "contraseña incorrecta", "intento": 1}'),
+    (2820, 76, '2026-11-03 11:27:46', 'intento_fallido', 'Usuarios', 76, '{"motivo": "contraseña incorrecta", "intento": 2}'),
+    (2821, 76, '2026-11-03 11:27:47', 'intento_fallido', 'Usuarios', 76, '{"motivo": "contraseña incorrecta", "intento": 3}'),
+    (2822, 76, '2026-11-03 11:27:48', 'intento_fallido', 'Usuarios', 76, '{"motivo": "contraseña incorrecta", "intento": 4}'),
+    (2823, 76, '2026-11-03 11:27:50', 'intento_fallido', 'Usuarios', 76, '{"motivo": "contraseña incorrecta", "intento": 5, "bloqueo_minutos": 3}'),
+    (2824, 76, '2026-11-03 11:27:50', 'intento_fallido', 'Usuarios', 76, '{"motivo": "cuenta bloqueada"}'),
+    (2825, 76, '2026-11-03 11:28:27', 'intento_fallido', 'Usuarios', 76, '{"motivo": "cuenta bloqueada"}'),
+    (2826, 76, '2026-11-03 11:28:52', 'intento_fallido', 'Usuarios', 76, '{"motivo": "cuenta bloqueada"}'),
+    (2827, 76, '2026-11-03 11:29:33', 'intento_fallido', 'Usuarios', 76, '{"motivo": "cuenta bloqueada"}'),
+    (2828, 76, '2026-11-03 11:29:36', 'intento_fallido', 'Usuarios', 76, '{"motivo": "cuenta bloqueada"}'),
+    (2829, 76, '2026-11-03 11:29:59', 'intento_fallido', 'Usuarios', 76, '{"motivo": "cuenta bloqueada"}'),
+    (2830, 76, '2026-11-03 11:31:21', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (2831, 76, '2026-11-03 11:31:29', 'configuracion', 'Configuracion_sistema', 8, '{"clave": "minutos_bloqueo", "anterior": "3", "nuevo": "15"}'),
+    (2832, 76, '2026-11-03 11:33:21', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (2833, 76, '2026-11-03 11:35:28', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (2940, 76, '2026-11-03 11:59:18', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (2957, 76, '2026-11-03 12:33:44', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (2958, 76, '2026-11-03 12:38:28', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (2959, 76, '2026-11-03 12:40:24', 'evaluacion_ia', 'Talentos', 277, '{"resultado": "valida", "intentos": 1, "rechazos": [], "id_evaluacion": 748}'),
+    (3066, 76, '2026-11-03 13:16:57', 'intento_fallido', 'Usuarios', 76, '{"motivo": "contraseña incorrecta", "intento": 1}'),
+    (3067, 76, '2026-11-03 13:17:15', 'inicio_sesion', 'Usuarios', 76, NULL),
+    (3280, 76, '2026-11-03 15:24:33', 'inicio_sesion', 'Usuarios', 76, NULL);
 
 -- Alertas_config (2 registros)
 INSERT INTO Alertas_config (id_alerta, id_usuario_creador, nombre, indicador, condicion, umbral, area, id_destinatario, grado_emergencia, activa, fecha_creacion) VALUES
@@ -759,7 +786,7 @@ INSERT INTO Configuracion_sistema (id_config, clave, valor, descripcion, id_usua
     (5, 'intentos_ia_por_dia', '3', 'Evaluaciones con IA por talento en un día', 76, '2026-09-30 20:23:17'),
     (6, 'variacion_alerta_default', '10', 'Variación en puntos que dispara una alerta por defecto', NULL, '2026-09-28 10:27:30'),
     (7, 'max_intentos_login', '5', 'Intentos fallidos antes de bloquear la cuenta', NULL, '2026-09-28 10:27:30'),
-    (8, 'minutos_bloqueo', '15', 'Minutos que dura el bloqueo de la cuenta', NULL, '2026-09-28 10:27:30'),
+    (8, 'minutos_bloqueo', '15', 'Minutos que dura el bloqueo de la cuenta', 76, '2026-11-03 11:31:29'),
     (9, 'minutos_inactividad_sesion', '30', 'Minutos de inactividad antes de cerrar la sesión', NULL, '2026-09-28 10:27:30');
 
 -- Los manuales de crear_bd.sql eran del Administrador inicial, que se borró
@@ -769,7 +796,7 @@ COMMIT;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- La bitácora de imagenes_manuales.sql usa IDs hasta el último exportado
-ALTER TABLE Bitacora AUTO_INCREMENT = 2515;
+ALTER TABLE Bitacora AUTO_INCREMENT = 3281;
 
 -- Verificación
 SELECT 'Usuarios' AS tabla, COUNT(*) AS registros FROM Usuarios UNION ALL

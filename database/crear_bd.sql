@@ -349,7 +349,7 @@ INSERT INTO Configuracion_sistema (clave, valor, descripcion) VALUES
 -- 6.1 Manuales del Administrador de RH (todas las secciones)
 INSERT INTO Manuales (dirigido_a, seccion_software, contenido_texto, id_usuario_edito) VALUES
     ('Administrador RH', 'Inicio de sesión',
-     'Escriba su usuario y contraseña y pulse "Iniciar sesión". En el primer inicio de sesión, o después de un restablecimiento, el sistema pide una contraseña nueva de al menos 8 caracteres con una mayúscula, una minúscula y un número. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos. Si olvidó su usuario o contraseña, pulse "¿Olvidaste tu usuario o contraseña?", escriba su correo y el Administrador de RH se pondrá en contacto con usted.',
+     'Escriba su usuario y contraseña y pulse "Iniciar sesión". En el primer inicio de sesión, o después de un restablecimiento, el sistema pide una contraseña nueva de al menos 8 caracteres con una mayúscula, una minúscula y un número. Después de varios intentos fallidos (5 por omisión) la cuenta se bloquea por el tiempo que fija el Administrador en Parámetros del sistema (15 minutos por omisión). Si olvidó su usuario o contraseña, pulse "¿Olvidaste tu usuario o contraseña?", escriba su correo y el Administrador de RH se pondrá en contacto con usted.',
      @id_admin),
     ('Administrador RH', 'Talentos',
      'Busque a un talento por ID o por nombre, o filtre la lista por área. Al seleccionarlo verá sus datos y la pestaña "Evaluación con IA". El Administrador de RH da de alta talentos en "Nuevo talento", los edita, los da de baja con un motivo y los evalúa con el botón "Evaluar" (hay un número limitado de evaluaciones por talento al día). El Encargado de área consulta los talentos de su área y puede solicitar una corrección de datos o una reevaluación con IA.',
@@ -385,7 +385,7 @@ INSERT INTO Manuales (dirigido_a, seccion_software, contenido_texto, id_usuario_
 -- 6.2 Manuales del Encargado de área (solo las secciones de su menú)
 INSERT INTO Manuales (dirigido_a, seccion_software, contenido_texto, id_usuario_edito) VALUES
     ('Encargado de area', 'Inicio de sesión',
-     'Escriba su usuario y contraseña y pulse "Iniciar sesión". En el primer inicio de sesión, o después de un restablecimiento, el sistema pide una contraseña nueva de al menos 8 caracteres con una mayúscula, una minúscula y un número. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos. Si olvidó su usuario o contraseña, pulse "¿Olvidaste tu usuario o contraseña?", escriba su correo y el Administrador de RH se pondrá en contacto con usted.',
+     'Escriba su usuario y contraseña y pulse "Iniciar sesión". En el primer inicio de sesión, o después de un restablecimiento, el sistema pide una contraseña nueva de al menos 8 caracteres con una mayúscula, una minúscula y un número. Después de varios intentos fallidos (5 por omisión) la cuenta se bloquea por el tiempo que fija el Administrador en Parámetros del sistema (15 minutos por omisión). Si olvidó su usuario o contraseña, pulse "¿Olvidaste tu usuario o contraseña?", escriba su correo y el Administrador de RH se pondrá en contacto con usted.',
      @id_admin),
     ('Encargado de area', 'Talentos',
      'Consulte los talentos de su área: búsquelos por ID o por nombre. Al seleccionar uno verá sus datos y su última evaluación con IA. Si un dato es incorrecto, pulse "Solicitar corrección de datos"; si necesita una evaluación más reciente, pulse "Solicitar reevaluación con IA". Ambas solicitudes llegan al Administrador de RH como notificación.',

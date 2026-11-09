@@ -1,4 +1,5 @@
 import importlib
+from pathlib import Path
 
 import mysql.connector
 import pytest
@@ -39,6 +40,14 @@ def test_la_conexion_usa_el_puerto(monkeypatch):
 ])
 def test_codigo_de_error(error, codigo):
     assert db.codigo_de_error(error) == codigo
+
+
+@pytest.mark.parametrize("archivo", ["crear_bd.sql", "imagenes_manuales.sql"])
+def test_manual_de_inicio_de_sesion_sin_bloqueo_fijo(archivo):
+    # Los intentos y los minutos se fijan en Parámetros del sistema: el manual no los da fijos
+    texto = (Path(__file__).parent.parent / "database" / archivo).read_text(encoding="utf-8")
+    assert "se bloquea 15 minutos" not in texto
+    assert texto.count("fija el Administrador en Parámetros del sistema (15 minutos por omisión)") == 2
 
 
 def test_catalogo_completo():
