@@ -268,3 +268,26 @@ desarrollo.
   10. Explicar cómo comprobar que MySQL y Ollama están en marcha.
   11. «Alertas y notificaciones»: aclarar que el botón «Crear las alertas sugeridas» solo
       aparece cuando no hay alertas (con `datos_actuales.sql` ya hay 2).
+
+## Verificación final (09/11/2026, commit `badc1db`)
+
+Segunda instalación desde cero en el mismo equipo de prueba, con el código de la rama
+`main` del repositorio de entrega en el commit `badc1db` (ZIP; el equipo no tiene Git),
+en una carpeta nueva (`C:\prueba-final`). Python 3.14.9, MySQL 8.0.46 y Ollama
+(`llama3.2:3b`) ya estaban instalados; la base `proyecto_talentos` y el usuario de MySQL
+`app_talentos` de la primera prueba se borraron antes de empezar.
+
+- **Instalación siguiendo solo el README:** OK. Pasos 0 a 5 sin errores ni dudas:
+  entorno virtual, `pip install -r requirements.txt` (15 a 20 min), `crear_bd.sql`,
+  `.env` con `DB_PORT=3306` y `OLLAMA_MODEL=llama3.2:3b`, `reset_admin.py` y
+  `streamlit run app.py` (inicio de sesión con el Administrador inicial y cambio de la
+  contraseña temporal).
+- **pytest con solo `crear_bd.sql`:** 243 correctas, 2 omitidas («Requiere los datos de
+  database/datos_actuales.sql»), 0 fallas (3 min 2 s).
+- **pytest con `datos_actuales.sql` e `imagenes_manuales.sql`:** 244 correctas,
+  1 omitida («Ya hay talentos de ejemplo cargados»), 0 fallas (10 min 2 s; el equipo ya
+  es lento en otras tareas, y en el de desarrollo tardan 1 min 39 s).
+- **Recorrido de prueba de 12 pasos con `AdminRH` y `PruebaE`:** OK. La evaluación con
+  IA tardó unos 80 segundos. El manual de inicio de sesión ya dice que los intentos y
+  el tiempo de bloqueo se fijan en Parámetros del sistema (5 y 15 minutos por omisión).
+- **Correcciones al README:** ninguna; todo coincidió con lo que dice.
